@@ -1,0 +1,88 @@
+* {
+    margin: 0;
+    color: white;
+    transition: all 0.5s;
+}
+
+@font-face {
+    font-family: itim;
+    src: url(./fonts/itim_font.ttf);
+}
+@font-face {
+    font-family: inter;
+    src: url(./fonts/inter_font.ttf);
+}
+
+body {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: auto;
+    width: 100vw;
+    height: 100vh;
+    background: #212121;
+}
+
+#navigation-header {
+    height: 10vh;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: auto;
+    background: #191919;
+    border-bottom: 1px solid black;
+}
+
+#app-title {
+    font-family: itim;
+    font-size: 5vh;
+    line-height: 9vh;
+    margin-left: 10vw;
+    user-select: none;
+}
+
+.bolder-text {
+    font-weight: bolder;
+}
+
+.underlined-text {
+    text-decoration: underline;
+}
+
+.input-text-label {
+    font-family: 'inter';
+    font-size: 1.8vh;
+    margin-bottom: 0.7vh;
+    margin-top: 3vh;
+    margin-left: 0.25vw;
+}
+
+.input-textbox {
+    background: transparent;
+    border: 1px solid #e0e0e05c;
+    border-radius: 0 1vh 1vh 1vh;
+    padding: 1vh;
+    font-size: 1.1rem;
+    box-shadow: 2px 2px 7px rgb(10 10 10);
+}
+.input-textbox:hover {
+    border-color: white;
+}
+
+.input-button {
+    font-family: itim;
+    background: #2B2B2B;
+    box-shadow: 2px 2px 7px rgb(10 10 10);
+    padding-top: 1vh;
+    padding-bottom: 1vh;
+    border-radius: 1vh;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+}
+.input-button:hover {
+    color: #2B2B2B;
+    background: white;
+    border: 1px solid black;
+}

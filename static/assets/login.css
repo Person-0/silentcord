@@ -1,0 +1,46 @@
+* {
+    user-select: none;
+}
+
+#login-container {
+    position: absolute;
+    top: 10vh;
+    width: 100vw;
+    height: 90vh;
+    margin: auto;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+#login-text {
+    font-family: inter;
+    font-size: 8vh;
+    margin-bottom: 7vh;
+    margin-top: 24vh;
+    text-shadow: 8px 8px 5px #0e0e0e;
+}
+
+#login-inputs {
+    margin: auto;
+    margin-bottom: 55vh;
+    text-align: left;
+    width: fit-content;
+    user-select: all;
+}
+
+.input-acc-btns {
+    display: flex;
+    margin: auto;
+}
+
+.input-button {
+    display: block;
+    width: 91.5%;
+    margin: auto;
+    width: 49%!important;
+    margin-top: 2vh!important;
+    margin-left: 0.5vh;
+    margin-right: 0.5vh;
+}

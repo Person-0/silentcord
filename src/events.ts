@@ -1,0 +1,7 @@
+export default {
+    "ROOM_CREATE": "ROOM_CREATE",
+    "MESSAGE_NEW": "MESSAGE_NEW",
+    "MESSAGE_DELETE": "MESSAGE_DELETE",
+    "USER_JOIN": "USER_JOIN",
+    "USER_LEAVE": "USER_LEAVE"
+}

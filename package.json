@@ -1,0 +1,30 @@
+{
+  "name": "silentcord",
+  "version": "0.0.1",
+  "description": "basic discord clone to host locally",
+  "main": "src/main.ts",
+  "keywords": [
+    "discord",
+    "chat",
+    "rooms"
+  ],
+  "author": "Person-0",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/ws": "^8.18.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "clean": "rimraf dist",
+    "start": "npm run clean && npm run build && node dist/main.js"
+  }
+}

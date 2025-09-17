@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SilentCord</title>
+    <link rel="stylesheet" href="./assets/shared.css">
+</head>
+
+<body>
+    <div id="navigation-header">
+        <p id="app-title">SilentCord</p>
+    </div>
+
+    <div id="msgcontainertemp" style="margin-top: 10vh;height: fit-content;overflow: auto;"></div>
+
+    <script>
+        const roomID = (new URLSearchParams(location.search)).get("rid");
+        if (roomID) {
+            let lastUpdate = null;
+            (async () => {
+                while (true) {
+                    await new Promise((rs, rj) => setTimeout(rs, 1e3));
+
+                    const newRes = await fetch(location.origin + "/api/poll_update?rid=" + roomID).then(res => res.text());
+                    try {
+                        if(JSON.parse(newRes).message === "Room 404"){
+                            alert("Invalid Room ID");
+                            location.href = "./landing.html";
+                            return;
+                        }
+                    } catch (error) {}
+                    if (newRes !== lastUpdate) {
+                        document.getElementById("msgcontainertemp").insertAdjacentHTML("afterbegin", `
+                        <br><p>${newRes}</p>
+                        `);
+                        lastUpdate = newRes;
+                    }
+                }
+            })();
+        } else {
+            alert("Invalid Room ID");
+            location.href = "./landing.html";
+        }
+    </script>
+
+</body>
+
+</html>
