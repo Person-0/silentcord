@@ -37,6 +37,7 @@ function main() {
 
     createRoomBtn.onclick = async() => {
         const params = new URLSearchParams();
+        params.append("username", account.username);
         let roomPass = window.prompt("Enter the password to set for your room (optional)");
         if(roomPass && roomPass.length){
             params.append("password", roomPass);

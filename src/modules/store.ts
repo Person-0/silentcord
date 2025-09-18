@@ -8,16 +8,28 @@ export class StoreManager {
         this.path = path;
         this.stored_data = {};
         this.encountered_error = false;
+
+        if(!(fs.existsSync(path))){
+            this.save();
+        }
+        
         this.read();
     }
 
-    get(key: string): {} {
+    get(key: string): any {
         return this.stored_data[key];
     }
 
     set(key: string, value: {}) {
         this.stored_data[key] = value;
         this.save();
+    }
+
+    remove(key: string) {
+        if(key in this.stored_data) {
+            delete this.stored_data[key];
+            this.save();
+        };
     }
 
     read() {
