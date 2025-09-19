@@ -6,14 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilentCord</title>
     <link rel="stylesheet" href="./assets/shared.css">
+    <link rel="stylesheet" href="./assets/room.css">
 </head>
 
 <body>
     <div id="navigation-header">
         <p id="app-title">SilentCord</p>
+
+        <div class="navigation-btns">
+            <button class="input-button" id="destroy-room-btn">Destroy Room</button>
+            <button class="input-button" id="copy-room-btn">Copy Room URL</button>
+        </div>
     </div>
 
-    <div id="msgcontainertemp" style="margin-top: 10vh;height: fit-content;overflow: auto;"></div>
+    <div id="main-container">
+        <div id="leftbar" class="bgdark">
+            <div class="leftbar-btns">
+                <button class="input-button leftbar-btn" id="">C</button>
+                <button class="input-button leftbar-btn" id="">V</button>
+                <button class="input-button leftbar-btn" id="">M</button>
+            </div>
+        </div>
+
+        <div id="chat-container" class="bgdark">
+
+        </div>
+    </div>
+
+    <div id="connected-people-list-container">
+        <p id="online-indicator">Online: <span id="online-indicator-value">0</span></p>
+        <div class="separator-line"></div>
+        <div id="connected-people-list">
+            
+        </div>
+    </div>
+
+    <div id="chat-inputs-container">
+        <input class="input-textbox" type="text" id="chat-input" placeholder="Enter message here...">
+        <button class="input-button chatbox-btn" id="">S</button>
+    </div>
 
     <script src="./js/room.js" type="module"></script>
 </body>

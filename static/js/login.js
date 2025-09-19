@@ -3,20 +3,43 @@ const passwordInput = document.getElementById("password-input");
 const submitBtn = document.getElementById("submit-login-btn");
 const signUpBtn = document.getElementById("signup-login-btn");
 
-const config = {
+const config = window.config = {
     "min_password_length": 4,
     "max_password_length": 30,
     "min_username_length": 3,
     "max_username_length": 16
 };
 
+window.switchCSS("loginPageCSS");
+
+try {
+    // show login page only if accessToken cookie does not exist / expired
+    if (!document.cookie.includes("accessToken=")) {
+        window.localStorage.clear();
+        throw "token cookie either expired or this is a new user. showing login page only.";
+    }
+
+    let accdata = window.localStorage.getItem("act");
+    if (accdata) {
+        // try parsing the account data & showing the landing page
+        accdata = JSON.parse(atob(accdata));
+        loginSuccess(accdata);
+    } else {
+        // clear cookies and localStorage for a fresh login experience
+        window.localStorage.clear();
+        clearCookies();
+    }
+} catch (e) {
+    console.log(e);
+}
+
 async function submitLoginDetails(type) {
-    if(
+    if (
         usernameInput.value.length < config.min_username_length ||
         passwordInput.value.length < config.min_password_length ||
         usernameInput.value.length > config.max_username_length ||
         passwordInput.value.length > config.max_password_length
-    ){
+    ) {
         return;
     }
 
@@ -39,17 +62,37 @@ async function submitLoginDetails(type) {
             alert("Unknown Error, Please try again later.");
         }
     } else {
-        if(res.response.pass) delete res.response.pass;
-        localStorage.setItem("account", btoa(JSON.stringify(res.response)));
-        location.href = "./landing.html";
+        loginSuccess(res.response);
     }
+}
+
+function loginSuccess(account) {
+    // remove login screen & enter event listener if no errors arised in previous statements
+    document.getElementById("login-container").remove();
+    window.removeEventListener("keydown", keyDownHandlerLogin);
+
+    // throw error if username not present in account data
+    if (!account.username) {
+        throw "account data does not have username";
+    }
+
+    // save login data (no passwords stored here) in localStorage
+    window.localStorage.setItem("act", btoa(JSON.stringify(account)));
+
+    // show landing page from ./js/landingPage.js
+    window.show_landing_page(account);
 }
 
 signUpBtn.onclick = () => submitLoginDetails("signup");
 submitBtn.onclick = () => submitLoginDetails("login");
-const keyDownHandlerLogin = ({key}) => {
-    if(key === "Enter") {
+function keyDownHandlerLogin({ key }) {
+    if (key === "Enter") {
         submitLoginDetails("login");
     }
 }
 window.addEventListener("keydown", keyDownHandlerLogin);
+
+// https://stackoverflow.com/questions/179355/clearing-all-cookies-with-javascript
+function clearCookies() {
+    document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
+}

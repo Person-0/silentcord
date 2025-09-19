@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilentCord</title>
     <link rel="stylesheet" href="./assets/shared.css">
-    <link rel="stylesheet" href="./assets/login.css">
 </head>
+
 <body>
     <div id="navigation-header">
         <p id="app-title">SilentCord</p>
     </div>
-    
+
     <div id="login-container">
+        <link class="css_file" id="loginPageCSS" rel="stylesheet" href="./assets/login.css">
+
         <p id="login-text">Account</p>
         <div id="login-inputs">
             <p class="input-text-label">Username</p>
@@ -25,7 +28,62 @@
             </div>
         </div>
     </div>
+
+    <div id="landing-page" style="display: none;">
+        <link class="css_file" id="landingPageCSS" rel="stylesheet" href="./assets/landing.css">
+
+        <div id="user-info">
+            <span id="username-text">
+                <span class="bolder-text">Welcome, </span><span id="username-container"></span><br>
+            </span>
+            <span id="ip-text">
+                <span>Your IP: </span><span id="ipaddr-container" class="underlined-text"></span>
+            </span>
+        </div>
+        <div id="room-inputs">
+            <div class="room-input-container">
+                <p class="input-text-label">Enter Room ID</p>
+                <input class="input-textbox" type="text" id="roomid-input">
+                <button class="input-button" id="join-room-btn">Join Room</button>
+            </div>
+            <p id="or-text-separator">OR</p>
+            <div class="room-input-container">
+                <button class="input-button" id="create-room-btn">Create Room</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*
+        <link rel="stylesheet" href="file1.css"> >> unaffected
+        <link id="file2" class="css_file" rel="stylesheet" href="file2.css"> >> disabled on start
+        <link id="file3" class="css_file" rel="stylesheet" href="file3.css"> >> disabled on start
+
+        switchCSS("file2") >> only file1.css & file2.css loaded
+        switchCSS("file3") >> only file1.css & file3.css loaded
+        */
+
+        function disableAllCSSFiles() {
+            for (const css_el of document.querySelectorAll(".css_file")) {
+                css_el.setAttribute("rel", "disabled_stylesheet");
+            }
+        }
+
+        window.switchCSS = function (id) {
+            const css_el = document.getElementById(id);
+            if (css_el) {
+                disableAllCSSFiles();
+                css_el.setAttribute("rel", "stylesheet");
+            } else {
+                console.log("CSS SWITCHER ERROR:", "a css file with the provided id does not exist. id provided:", id);
+            }
+        } 
+
+        disableAllCSSFiles();
+    </script>
+    <script src="./js/landingPage.js" type="module"></script>
     <script src="./js/login.js" type="module"></script>
 
 </body>
+
 </html>

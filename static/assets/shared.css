@@ -24,6 +24,7 @@ body {
 }
 
 #navigation-header {
+    display: flex;
     height: 10vh;
     width: 100vw;
     position: absolute;
@@ -64,7 +65,7 @@ body {
     border-radius: 0 1vh 1vh 1vh;
     padding: 1vh;
     font-size: 1.1rem;
-    box-shadow: 2px 2px 7px rgb(10 10 10);
+    box-shadow: 2px 2px 7px rgb(10 10 10 / 50%);
 }
 .input-textbox:hover {
     border-color: white;
@@ -73,7 +74,7 @@ body {
 .input-button {
     font-family: itim;
     background: #2B2B2B;
-    box-shadow: 2px 2px 7px rgb(10 10 10);
+    box-shadow: 2px 2px 7px rgb(10 10 10 / 50%);
     padding-top: 1vh;
     padding-bottom: 1vh;
     border-radius: 1vh;

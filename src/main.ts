@@ -11,6 +11,7 @@ import { config } from "dotenv";
 import * as EVENTS from "../static/js/configs/events.json";
 import CONFIG from "./config";
 import { StoreManager } from "./modules/store";
+import ratelimiter from "./modules/ratelimiter";
 
 // ==================================================================
 // Init
@@ -136,9 +137,9 @@ class MessageList {
         this.items.push(...items);
     }
 
-    add: (content: string) => string = (content: string) => {
+    add: (author: string, content: string) => string = (author: string, content: string) => {
         const messageID = "msg_" + crypto.randomUUID();
-        const message = new Message("", content, messageID);
+        const message = new Message(author, content, messageID);
 
         this.items.push(message);
         this.updateCallback(EVENTS.MESSAGE_NEW, message)
@@ -275,6 +276,9 @@ function main() {
     // short one-liner func to "reply" to express requests with stringified json
     const express_reply = (res: any, data: {}) => res.send(JSON.stringify(data));
 
+    // WIP (unimplemented): ratelimiting to prevent DOS / DDOS
+    app.use(ratelimiter);
+
     // POST request handling
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.text())
@@ -306,6 +310,12 @@ function main() {
         let response: Record<any, any> = {};
         try {
             const message: Record<string, string> = JSON.parse(req.body);
+
+            if (!CONFIG.accepting_new_registrations) {
+                errorMessage = "Signups are closed. Please try again later.";
+                throw req.ip + " >> tried to register with username [" + (typeof message.username === "string" ? message.username : "<invalid username>") + "] but failed.";
+            }
+
             if (
                 message.username &&
                 message.password &&
@@ -527,7 +537,7 @@ function main() {
                 console.log("WebSocket was forcefully closed with reason: " + closeReason);
             }
 
-            if(inRoom){
+            if (inRoom) {
                 room.removeClient(username);
                 inRoom = false;
             }
@@ -541,6 +551,10 @@ function main() {
             } catch (error) {
                 closeReason = "malformed data provided";
                 forceClosed = true;
+                send({
+                    label: EVENTS.ERROR_MSG,
+                    message: closeReason
+                });
                 ws.close();
                 return;
             }
@@ -570,11 +584,19 @@ function main() {
                             } else {
                                 closeReason = "accessToken status: " + validity;
                                 forceClosed = true;
+                                send({
+                                    label: EVENTS.ERROR_MSG,
+                                    message: closeReason
+                                });
                                 ws.close();
                             }
                         } else {
                             closeReason = "invalid username/accessToken provided";
                             forceClosed = true;
+                            send({
+                                label: EVENTS.ERROR_MSG,
+                                message: closeReason
+                            });
                             ws.close();
                         }
                         break;
@@ -584,8 +606,8 @@ function main() {
                             typeof data.rid === "string" &&
                             data.rid.length > 0
                         ) {
-                            if(isLoggedIn) {
-                                if(inRoom){
+                            if (isLoggedIn) {
+                                if (inRoom) {
                                     room.removeClient(username);
                                     inRoom = false;
                                 }
@@ -597,27 +619,39 @@ function main() {
                                 } else {
                                     closeReason = "Room 404";
                                     forceClosed = true;
+                                    send({
+                                        label: EVENTS.ERROR_MSG,
+                                        message: closeReason
+                                    });
                                     ws.close();
                                 }
                             } else {
                                 closeReason = "unauthorized";
                                 forceClosed = true;
+                                send({
+                                    label: EVENTS.ERROR_MSG,
+                                    message: closeReason
+                                });
                                 ws.close();
                             }
                         } else {
                             closeReason = "invalid room id provided";
                             forceClosed = true;
+                            send({
+                                label: EVENTS.ERROR_MSG,
+                                message: closeReason
+                            });
                             ws.close();
                         }
                         break;
 
                     case EVENTS.MESSAGE_NEW:
-                        if(inRoom) {
-                            if(
+                        if (inRoom) {
+                            if (
                                 typeof data.content === "string" &&
                                 data.content.length > 0
                             ) {
-                                room.messages.add(data.content);
+                                room.messages.add(username, data.content);
                             } else {
                                 send({
                                     label: EVENTS.ERROR_MSG,
