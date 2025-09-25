@@ -45,4 +45,10 @@ window.show_landing_page = function show_landing_page(accountData) {
 
     window.switchCSS("landingPageCSS");
     document.getElementById("landing-page").style.display = "block";
+    document.getElementById("acc-toggle-btn").innerHTML = "Logout";
+    document.getElementById("acc-toggle-btn").onclick = function(){ 
+        localStorage.clear();
+        clearCookies();
+        location.reload();
+    };
 }

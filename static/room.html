@@ -22,28 +22,43 @@
     <div id="main-container">
         <div id="leftbar" class="bgdark">
             <div class="leftbar-btns">
-                <button class="input-button leftbar-btn" id="">C</button>
-                <button class="input-button leftbar-btn" id="">V</button>
-                <button class="input-button leftbar-btn" id="">M</button>
+                <button class="input-button leftbar-btn" onclick="showTab('chat')">
+                    <span class="material-symbols-outlined material-icon-icon">
+                        chat
+                    </span>
+                </button>
+                <button class="input-button leftbar-btn" onclick="showTab('vc')">
+                    <span class="material-symbols-outlined material-icon-icon">
+                        voice_chat
+                    </span>
+                </button>
+                <button class="input-button leftbar-btn" onclick="showTab('music')">
+                    <span class="material-symbols-outlined material-icon-icon">
+                        queue_music
+                    </span>
+                </button>
             </div>
         </div>
 
-        <div id="chat-container" class="bgdark">
+        <div id="chat-container" class="bgdark"></div>
 
-        </div>
     </div>
 
     <div id="connected-people-list-container">
         <p id="online-indicator">Online: <span id="online-indicator-value">0</span></p>
         <div class="separator-line"></div>
         <div id="connected-people-list">
-            
+
         </div>
     </div>
 
     <div id="chat-inputs-container">
         <input class="input-textbox" type="text" id="chat-input" placeholder="Enter message here...">
-        <button class="input-button chatbox-btn" id="">S</button>
+        <button class="input-button chatbox-btn" id="chat-attach-btn">
+            <span class="material-symbols-outlined material-icon-icon">
+                attach_file_add
+            </span>
+        </button>
     </div>
 
     <script src="./js/room.js" type="module"></script>

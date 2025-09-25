@@ -11,6 +11,8 @@ const config = window.config = {
 };
 
 window.switchCSS("loginPageCSS");
+document.getElementById("acc-toggle-btn").innerHTML = "Login";
+document.getElementById("acc-toggle-btn").onclick = function(){ location.href = location.origin + "/login.html" };
 
 try {
     // show login page only if accessToken cookie does not exist / expired
@@ -91,8 +93,3 @@ function keyDownHandlerLogin({ key }) {
     }
 }
 window.addEventListener("keydown", keyDownHandlerLogin);
-
-// https://stackoverflow.com/questions/179355/clearing-all-cookies-with-javascript
-function clearCookies() {
-    document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
-}

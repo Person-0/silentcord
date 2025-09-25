@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SilentCord</title>
+    <link rel="stylesheet" href="./assets/shared.css">
+    <style>
+        #text-content {
+            position: absolute;
+            width: 93vw;
+            height: 75vh;
+            padding-left: 1vw;
+            padding-right: 1vw;
+            padding-top: 1vh;
+            padding-bottom: 1vh;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            margin: auto;
+            transform: translateY(2.5vh);
+            background-color: rgb(0 0 0 / 10%);
+            border-radius: 1vw;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="navigation-header">
+        <p id="app-title">SilentCord</p>
+    </div>
+
+    <div id="text-content">
+
+    </div>
+
+    <div class="footer">
+        <div class="footer-text-item"><a class="url-link" href="./login.html">Login / Signup</a></div>
+    </div>
+
+    <script src="./js/cssSwitcher.js"></script>
+    <script src="./js/libs/marked.umd.js"></script>
+    <script>
+        fetch(location.href.replace(location.pathname, "") + "/credits.md").then(res => res.text()).then(res => {
+            document.getElementById("text-content").innerHTML = marked.parse(res);
+        }).catch(e => {
+            alert("CRITICAL FETCH/MARKDOWN PARSE ERROR! CHECK CONSOLE FOR DETAILS");
+            cosnole.log(e);
+        })
+    </script>
+
+</body>
+
+</html>

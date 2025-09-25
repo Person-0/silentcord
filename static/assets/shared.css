@@ -1,8 +1,4 @@
-* {
-    margin: 0;
-    color: white;
-    transition: all 0.5s;
-}
+@import url(./fonts/material-icons-google/material-symbols-outlined.css);
 
 @font-face {
     font-family: itim;
@@ -11,6 +7,12 @@
 @font-face {
     font-family: inter;
     src: url(./fonts/inter_font.ttf);
+}
+
+* {
+    margin: 0;
+    color: white;
+    transition: all 0.5s;
 }
 
 body {
@@ -86,4 +88,46 @@ body {
     color: #2B2B2B;
     background: white;
     border: 1px solid black;
+}
+.material-icon-icon{
+    color: inherit!important;
+}
+
+.footer {
+    height: 5vh;
+    width: 100vw;
+    background: #191919;
+    border-top: 1px solid black;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: row;
+}
+
+.footer-text-item {
+    font-family: iter;
+    font-weight: 100;
+    margin: auto;
+    margin-right: 2vw;
+}
+
+a {
+    color: #989898;
+    text-decoration: underline;
+    font-family: 'inter';
+}
+a:hover {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+#acc-toggle-btn {
+    cursor: pointer!important;
+}
+
+.footer-sep {
+    display: inline;
+    margin-left: 0.5vw;
+    margin-right: 0.5vw;
 }

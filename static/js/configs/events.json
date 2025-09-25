@@ -1,11 +1,13 @@
 {
-    "ROOM_CREATE": "ROOM_CREATE",
-    "MESSAGE_NEW": "MESSAGE_NEW",
-    "MESSAGE_DELETE": "MESSAGE_DELETE",
-    "USER_JOIN": "USER_JOIN",
-    "USER_LEAVE": "USER_LEAVE",
-    "LOGIN": "LOGIN",
-    "PING": "PING",
-    "ROOM": "ROOM",
-    "ERROR_MSG": "ERROR_MSG"
+    "ROOM_CREATE": "rc",
+    "ROOM_DESTROY": "rd",
+    "MESSAGE_NEW": "mn",
+    "MESSAGE_DELETE": "md",
+    "USER_JOIN": "uj",
+    "USER_LEAVE": "ul",
+    "LOGIN": "l",
+    "PING": "p",
+    "ROOM": "r",
+    "SHOW_ALERT": "sa",
+    "__DEV_REJOIN__": ".dr."
 }

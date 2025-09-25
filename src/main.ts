@@ -1,7 +1,7 @@
 import * as path from "path";
 import { createServer } from "http";
 import { existsSync, mkdirSync } from "fs";
-import * as crypto from "crypto";
+import { randomUUID } from "crypto";
 
 import { WebSocketServer, WebSocket } from "ws";
 import * as express from "express";
@@ -17,14 +17,14 @@ import ratelimiter from "./modules/ratelimiter";
 // Init
 // ==================================================================
 
-// load .env into SECRETS object
+// load .env into SECRETS object and not process.env
 const SECRETS: Record<string, string> = {};
 config({ debug: false, processEnv: SECRETS });
 
 // Data store
 const storagePath = path.join(__dirname, "../storage");
 if (!(existsSync(storagePath))) {
-    mkdirSync(storagePath);
+    mkdirSync(storagePath, { recursive: true });
 }
 
 // Data Store: Accounts
@@ -43,7 +43,7 @@ class accessTokenRecord {
     accessToken: string;
     createdAt: number;
     constructor() {
-        this.accessToken = crypto.randomUUID() + "-" + crypto.randomUUID();
+        this.accessToken = randomUUID() + "-" + randomUUID();
         this.createdAt = Date.now();
     }
 }
@@ -138,7 +138,7 @@ class MessageList {
     }
 
     add: (author: string, content: string) => string = (author: string, content: string) => {
-        const messageID = "msg_" + crypto.randomUUID();
+        const messageID = "msg_" + randomUUID();
         const message = new Message(author, content, messageID);
 
         this.items.push(message);
@@ -175,6 +175,12 @@ class Room {
         const account = ACCOUNTS.get(username);
         if (account) {
             this.connectedClients[username] = new ConnectedClient(ACCOUNTS.get(username), ws);
+            // send all connected users to this client
+            for (const [username, client] of Object.entries(this.connectedClients)) {
+                ws.sendJSON(new UpdateInstance(EVENTS.USER_JOIN, {username}));
+            }
+            // tell all other clients that this user joined
+            this.broadcastUpdate(new UpdateInstance(EVENTS.USER_JOIN, { username }), username);
         } else {
             console.log(`[ERROR] Room (${this.id}) > tried to add non-authorized client (username: ${username})`);
             try { ws.close() } catch { };
@@ -184,12 +190,13 @@ class Room {
     removeClient(username: string) {
         if (username in this.connectedClients) {
             delete this.connectedClients[username];
+            this.broadcastUpdate(new UpdateInstance(EVENTS.USER_LEAVE, { username }));
         } else {
             console.log(`[WARN] Room (${this.id}) > tried to remove client (username: ${username}) that does not exist.`);
         }
     }
 
-    broadcastUpdate(update: UpdateInstance, skipUsername: string[] | string = []) {
+    broadcastUpdate(update: UpdateInstance, skipUsername: string[] | string = [], callbackPerClient: (client: ConnectedClient)=>void = (client: ConnectedClient) => {}) {
         for (const [username, client] of Object.entries(this.connectedClients)) {
             if (typeof skipUsername === "string") {
                 if (skipUsername === username) {
@@ -202,7 +209,15 @@ class Room {
             }
 
             client.ws.sendJSON(update);
+            if(callbackPerClient) callbackPerClient(client);
         }
+    }
+
+    destroy() {
+        const closeEvent = new UpdateInstance(EVENTS.ROOM_DESTROY, {});
+        this.broadcastUpdate(closeEvent, [], (client: ConnectedClient) => {
+            client.ws.close();
+        });
     }
 
     constructor(id: string, password: string | boolean, creator: string) {
@@ -252,6 +267,7 @@ class MessageDatabaseManager {
     destroyRoom = (roomID: string) => {
         const room = this.getRoom(roomID);
         if (room) {
+            room.destroy();
             delete this.rooms[roomID]
             return true;
         } else {
@@ -346,6 +362,7 @@ function main() {
             error = true;
             console.log("POST_MESSAGE ERROR:", e);
         }
+
         if (error) {
             express_reply(res, {
                 error,
@@ -396,6 +413,7 @@ function main() {
             error = true;
             console.log("POST_MESSAGE ERROR:", e);
         }
+
         if (error) {
             express_reply(res, {
                 error,
@@ -552,7 +570,7 @@ function main() {
                 closeReason = "malformed data provided";
                 forceClosed = true;
                 send({
-                    label: EVENTS.ERROR_MSG,
+                    label: EVENTS.SHOW_ALERT,
                     message: closeReason
                 });
                 ws.close();
@@ -585,7 +603,7 @@ function main() {
                                 closeReason = "accessToken status: " + validity;
                                 forceClosed = true;
                                 send({
-                                    label: EVENTS.ERROR_MSG,
+                                    label: EVENTS.SHOW_ALERT,
                                     message: closeReason
                                 });
                                 ws.close();
@@ -594,7 +612,7 @@ function main() {
                             closeReason = "invalid username/accessToken provided";
                             forceClosed = true;
                             send({
-                                label: EVENTS.ERROR_MSG,
+                                label: EVENTS.SHOW_ALERT,
                                 message: closeReason
                             });
                             ws.close();
@@ -620,7 +638,7 @@ function main() {
                                     closeReason = "Room 404";
                                     forceClosed = true;
                                     send({
-                                        label: EVENTS.ERROR_MSG,
+                                        label: EVENTS.SHOW_ALERT,
                                         message: closeReason
                                     });
                                     ws.close();
@@ -629,7 +647,7 @@ function main() {
                                 closeReason = "unauthorized";
                                 forceClosed = true;
                                 send({
-                                    label: EVENTS.ERROR_MSG,
+                                    label: EVENTS.SHOW_ALERT,
                                     message: closeReason
                                 });
                                 ws.close();
@@ -638,7 +656,7 @@ function main() {
                             closeReason = "invalid room id provided";
                             forceClosed = true;
                             send({
-                                label: EVENTS.ERROR_MSG,
+                                label: EVENTS.SHOW_ALERT,
                                 message: closeReason
                             });
                             ws.close();
@@ -654,13 +672,13 @@ function main() {
                                 room.messages.add(username, data.content);
                             } else {
                                 send({
-                                    label: EVENTS.ERROR_MSG,
+                                    label: EVENTS.SHOW_ALERT,
                                     message: "invalid message sent"
                                 });
                             }
                         } else {
                             send({
-                                label: EVENTS.ERROR_MSG,
+                                label: EVENTS.SHOW_ALERT,
                                 message: "cannot send message if not in room"
                             });
                         }

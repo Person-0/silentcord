@@ -53,34 +53,21 @@
         </div>
     </div>
 
+    <div class="footer">
+        <div class="footer-text-item">
+            <a class="url-link" id="acc-toggle-btn">Logout</a><span class="footer-sep">
+            |
+            </span><a class="url-link" href="./credits.html">Credits</a>
+        </div>
+    </div>
+
     <script>
-        /*
-        <link rel="stylesheet" href="file1.css"> >> unaffected
-        <link id="file2" class="css_file" rel="stylesheet" href="file2.css"> >> disabled on start
-        <link id="file3" class="css_file" rel="stylesheet" href="file3.css"> >> disabled on start
-
-        switchCSS("file2") >> only file1.css & file2.css loaded
-        switchCSS("file3") >> only file1.css & file3.css loaded
-        */
-
-        function disableAllCSSFiles() {
-            for (const css_el of document.querySelectorAll(".css_file")) {
-                css_el.setAttribute("rel", "disabled_stylesheet");
-            }
+        // https://stackoverflow.com/questions/179355/clearing-all-cookies-with-javascript
+        function clearCookies() {
+            document.cookie.split(";").forEach(function (c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
         }
-
-        window.switchCSS = function (id) {
-            const css_el = document.getElementById(id);
-            if (css_el) {
-                disableAllCSSFiles();
-                css_el.setAttribute("rel", "stylesheet");
-            } else {
-                console.log("CSS SWITCHER ERROR:", "a css file with the provided id does not exist. id provided:", id);
-            }
-        } 
-
-        disableAllCSSFiles();
     </script>
+    <script src="./js/cssSwitcher.js"></script>
     <script src="./js/landingPage.js" type="module"></script>
     <script src="./js/login.js" type="module"></script>
 

@@ -24,7 +24,7 @@
   },
   "scripts": {
     "build": "npx tsc",
-    "clean": "rimraf dist",
+    "clean": "rimraf dist && rimraf storage/accesstokens.json",
     "start": "npm run clean && npm run build && node dist/main.js"
   }
 }
