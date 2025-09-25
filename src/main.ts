@@ -36,7 +36,7 @@ interface AccountInstance {
 interface AccountManager extends StoreManager {
     set: (key: string, value: AccountInstance) => void
 }
-const ACCOUNTS: AccountManager = new StoreManager(path.join(storagePath, "accounts.json"));
+const ACCOUNTS: AccountManager = new StoreManager(path.join(storagePath, CONFIG.storedFiles.accounts));
 
 // Data Store: Temporary account access tokens
 class accessTokenRecord {
@@ -73,7 +73,7 @@ class AccessTokentManager {
     }
 }
 
-const ACCOUNT_TOKENS = new AccessTokentManager(path.join(storagePath, "accesstokens.json"), CONFIG.access_token_expire_interval);
+const ACCOUNT_TOKENS = new AccessTokentManager(path.join(storagePath, CONFIG.storedFiles.accessTokens), CONFIG.access_token_expire_interval);
 
 // simple cookie reader
 function readCookies(cookiesStr: string): Record<string, string> {
