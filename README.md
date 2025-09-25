@@ -23,7 +23,7 @@ A Discord inspired small and simple web-app to chat with people on a local area 
     - ```npm start``` > This command cleans the access tokens & previously build code, runs the typescript build command & hosts the server.
     - Specific commmands:
         - ```npm run clean``` > Clean the access tokens, previously build code in /dist and other temp files if any.
-        - ```npm run build``` > Build typescript
+        - ```npm run build``` > Runs the typescript build command
 
 ## Credits
 - [Click here](./static/credits.md)
