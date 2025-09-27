@@ -6,6 +6,7 @@ import { WebSocketServer } from "ws";
 import * as express from "express";
 import * as bodyParser from "body-parser";
 
+// ==================================================================
 // User-Defined Modules
 import "./loggerpatch";
 import * as EVENTS from "../static/js/configs/events.json";
@@ -14,7 +15,6 @@ import ratelimiter from "./modules/ratelimiter";
 import { AccessTokensManager, AccountManager, AccountInstance } from "./modules/accounts";
 import { MessageDatabaseManager } from "./modules/messages";
 import { WebSocketConnectedClient, Room } from "./modules/room";
-// ==================================================================
 
 // ==================================================================
 // Init
@@ -227,7 +227,6 @@ function main() {
         const accessToken = cookies.accessToken || false;
         const username = req.query["username"]?.toString() || "";
         const roomID = req.query["rid"]?.toString() || "";
-        const auth = req.query["auth"]?.toString() || "";
         let errorMessage = "";
         if (
             roomID &&
