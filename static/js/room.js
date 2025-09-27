@@ -85,7 +85,7 @@ async function main() {
                 break;
 
             case EVENTS.ROOM_DESTROY:
-                alert("Room was Destroyed");
+                alert("Room was destroyed.");
                 break;
 
             case EVENTS.MESSAGE_NEW:
@@ -106,6 +106,10 @@ async function main() {
 
             case EVENTS.SHOW_ALERT:
                 alert(data.message);
+                break;
+            
+            case EVENTS.WS_CLOSE:
+                console.log("WS CLOSED:", data.message);
                 break;
         }
     }

@@ -1,79 +1,56 @@
+// ==================================================================
+// External Dependencies
 import * as path from "path";
 import { createServer } from "http";
-import { existsSync, mkdirSync } from "fs";
-import { randomUUID } from "crypto";
-
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer } from "ws";
 import * as express from "express";
 import * as bodyParser from "body-parser";
 import { config } from "dotenv";
 
+// User-Defined Modules
 import * as EVENTS from "../static/js/configs/events.json";
 import CONFIG from "./config";
-import { StoreManager } from "./modules/store";
 import ratelimiter from "./modules/ratelimiter";
-
-// ==================================================================
-// Init
+import { AccessTokensManager, AccountManager, AccountInstance } from "./modules/accounts";
+import { MessageDatabaseManager } from "./modules/messages";
+import { WebSocketConnectedClient, Room } from "./modules/room";
 // ==================================================================
 
 // load .env into SECRETS object and not process.env
 const SECRETS: Record<string, string> = {};
 config({ debug: false, processEnv: SECRETS });
 
-// Data store
-const storagePath = path.join(__dirname, "../storage");
-if (!(existsSync(storagePath))) {
-    mkdirSync(storagePath, { recursive: true });
+// Logger //
+const _rawlog = console.log.bind(console);
+const ensureLength2 = (e: any) => {const t = e.toString(); return t.length === 1 ? ("0" + t) : t;}
+global.console.log = (...e) => {
+    const now = new Date();
+    const builtDateString = (
+        "[" +
+        [
+            now.getDate(),
+            now.getMonth() + 1,
+            now.getFullYear()
+        ].map(e => ensureLength2(e)).join("/") +
+        " " +
+        [
+            now.getHours(),
+            now.getMinutes(),
+            now.getSeconds()
+        ].map(e => ensureLength2(e)).join(":") +
+        "]"
+    )
+    return _rawlog(builtDateString, ...e);
 }
 
-// Data Store: Accounts
-interface AccountInstance {
-    name: string,
-    pass: string,
-    isAdmin: boolean
-}
-interface AccountManager extends StoreManager {
-    set: (key: string, value: AccountInstance) => void
-}
-const ACCOUNTS: AccountManager = new StoreManager(path.join(storagePath, CONFIG.storedFiles.accounts));
+// ==================================================================
+// Init
+// ==================================================================
 
-// Data Store: Temporary account access tokens
-class accessTokenRecord {
-    accessToken: string;
-    createdAt: number;
-    constructor() {
-        this.accessToken = randomUUID() + "-" + randomUUID();
-        this.createdAt = Date.now();
-    }
-}
-
-class AccessTokentManager {
-    store: StoreManager;
-    tokenExpiryInterval: number;
-
-    createAccessToken(username: string) {
-        const newRecord = new accessTokenRecord();
-        this.store.set(username, newRecord);
-        return newRecord.accessToken;
-    }
-
-    validateAccessToken(username: string, toCheckToken: string): "valid" | "invalid" | "expired" {
-        const record: accessTokenRecord = this.store.get(username);
-        if (record && (Date.now() - record.createdAt) >= this.tokenExpiryInterval) {
-            this.store.remove(username);
-            return "expired";
-        }
-        return record ? (record.accessToken === toCheckToken ? "valid" : "invalid") : "invalid";
-    }
-
-    constructor(filepath: string, tokenExpiryInterval: number) {
-        this.tokenExpiryInterval = tokenExpiryInterval;
-        this.store = new StoreManager(filepath);
-    }
-}
-
-const ACCOUNT_TOKENS = new AccessTokentManager(path.join(storagePath, CONFIG.storedFiles.accessTokens), CONFIG.access_token_expire_interval);
+// Data store: access tokens, accounts
+const ACCOUNTS = new AccountManager();
+const ACCOUNT_TOKENS = new AccessTokensManager(CONFIG.storedFiles.accessTokens, CONFIG.access_token_expire_interval);
+const msgDatabase = new MessageDatabaseManager();
 
 // simple cookie reader
 function readCookies(cookiesStr: string): Record<string, string> {
@@ -89,194 +66,6 @@ function readCookies(cookiesStr: string): Record<string, string> {
         return cookies;
     } else {
         return {};
-    }
-}
-
-// ==================================================================
-// Classes
-// ==================================================================
-
-class Message {
-    content: string;
-    timestamp: number;
-    author: string;
-    id: string;
-
-    constructor(author: string, content: string, id: string) {
-        this.author = author;
-        this.content = content;
-        this.timestamp = Date.now();
-        this.id = id;
-    }
-}
-
-class UpdateInstance {
-    label: string;
-    timestamp: number;
-    data: any;
-
-    constructor(label: string, data: any, timestamp: number = Date.now()) {
-        this.label = label;
-        this.data = data;
-        this.timestamp = timestamp;
-    }
-}
-
-class MessageList {
-    items: Message[] = [];
-    updateCallback: (type: string, data: any) => void;
-
-    constructor(updateCallback: (type: string, data: any) => void) {
-        this.updateCallback = updateCallback;
-    }
-
-    loadItems: (items: [], append: boolean) => void = (items: [], append: boolean = false) => {
-        if (!append) {
-            this.items.length = 0;
-        }
-        this.items.push(...items);
-    }
-
-    add: (author: string, content: string) => string = (author: string, content: string) => {
-        const messageID = "msg_" + randomUUID();
-        const message = new Message(author, content, messageID);
-
-        this.items.push(message);
-        this.updateCallback(EVENTS.MESSAGE_NEW, message)
-
-        return messageID;
-    }
-}
-
-interface WebSocketConnectedClient extends WebSocket {
-    sendJSON: (data: {}) => void
-}
-
-class ConnectedClient {
-    account: AccountInstance;
-    ws: WebSocketConnectedClient;
-
-    constructor(account: AccountInstance, ws: WebSocketConnectedClient) {
-        this.account = account;
-        this.ws = ws;
-    }
-}
-
-class Room {
-    id: string;
-    password: boolean | string;
-    messages: MessageList;
-    lastUpdate: UpdateInstance;
-    createdAt: number;
-    creator: string;
-    connectedClients: Record<string, ConnectedClient>;
-
-    addClient(username: string, ws: WebSocketConnectedClient) {
-        const account = ACCOUNTS.get(username);
-        if (account) {
-            this.connectedClients[username] = new ConnectedClient(ACCOUNTS.get(username), ws);
-            // send all connected users to this client
-            for (const [username, client] of Object.entries(this.connectedClients)) {
-                ws.sendJSON(new UpdateInstance(EVENTS.USER_JOIN, {username}));
-            }
-            // tell all other clients that this user joined
-            this.broadcastUpdate(new UpdateInstance(EVENTS.USER_JOIN, { username }), username);
-        } else {
-            console.log(`[ERROR] Room (${this.id}) > tried to add non-authorized client (username: ${username})`);
-            try { ws.close() } catch { };
-        }
-    }
-
-    removeClient(username: string) {
-        if (username in this.connectedClients) {
-            delete this.connectedClients[username];
-            this.broadcastUpdate(new UpdateInstance(EVENTS.USER_LEAVE, { username }));
-        } else {
-            console.log(`[WARN] Room (${this.id}) > tried to remove client (username: ${username}) that does not exist.`);
-        }
-    }
-
-    broadcastUpdate(update: UpdateInstance, skipUsername: string[] | string = [], callbackPerClient: (client: ConnectedClient)=>void = (client: ConnectedClient) => {}) {
-        for (const [username, client] of Object.entries(this.connectedClients)) {
-            if (typeof skipUsername === "string") {
-                if (skipUsername === username) {
-                    continue;
-                }
-            } else if (typeof skipUsername === "object" && Array.isArray(skipUsername)) {
-                if (skipUsername.includes(username)) {
-                    continue;
-                }
-            }
-
-            client.ws.sendJSON(update);
-            if(callbackPerClient) callbackPerClient(client);
-        }
-    }
-
-    destroy() {
-        const closeEvent = new UpdateInstance(EVENTS.ROOM_DESTROY, {});
-        this.broadcastUpdate(closeEvent, [], (client: ConnectedClient) => {
-            client.ws.close();
-        });
-    }
-
-    constructor(id: string, password: string | boolean, creator: string) {
-        this.id = id;
-        this.password = password;
-        this.createdAt = Date.now();
-        this.creator = creator;
-        this.connectedClients = {};
-
-        if (password) {
-            this.lastUpdate = new UpdateInstance(EVENTS.ROOM_CREATE, null);
-        } else {
-            this.lastUpdate = new UpdateInstance(
-                EVENTS.MESSAGE_NEW,
-                new Message("???", "No room password, Security & Privacy may be compromised.", "???"),
-                this.createdAt
-            )
-        }
-
-        const onNewMessage = (type: string, data: any) => {
-            this.lastUpdate = new UpdateInstance(type, data);
-            this.broadcastUpdate(this.lastUpdate);
-        }
-
-        this.messages = new MessageList(onNewMessage);
-
-        this.broadcastUpdate(this.lastUpdate);
-    }
-}
-
-class MessageDatabaseManager {
-    rooms: Record<string, Room> = {};
-
-    createRoom = (password: boolean | string, creator: string) => {
-        // small random id generator (need short ids of length 5 for room ids)
-        const makeId = (length: number = 5) => {
-            return new Array(length).fill(0).map(e => {
-                const allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRTSTUVWXYZ123456789";
-                return allowed[Math.floor(Math.random() * allowed.length)];
-            }).join("");
-        }
-        const id = makeId();
-        this.rooms[id] = new Room(id, password, creator);
-        return id;
-    }
-
-    destroyRoom = (roomID: string) => {
-        const room = this.getRoom(roomID);
-        if (room) {
-            room.destroy();
-            delete this.rooms[roomID]
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    getRoom = (id: string) => {
-        return this.rooms[id];
     }
 }
 
@@ -320,7 +109,7 @@ function main() {
         return account_response;
     }
 
-    app.post("/api/signup", (req, res) => {
+    app.post("/api/signup", async(req, res) => {
         let error = false;
         let errorMessage = "Unknown Error. Please contact the developer of this application.";
         let response: Record<any, any> = {};
@@ -344,19 +133,20 @@ function main() {
             ) {
                 const account = ACCOUNTS.get(message.username);
                 if (!account) {
-                    ACCOUNTS.set(message.username, {
-                        name: message.username,
-                        pass: message.password,
-                        isAdmin: false
-                    });
-                    response = getNewLoginInfo(message.username, ACCOUNTS.get(message.username), req.ip);
+                    const createAccResult = await ACCOUNTS.set(message.username, message.password);
+                    if(createAccResult) {
+                        response = getNewLoginInfo(message.username, ACCOUNTS.get(message.username), req.ip);
+                    } else {
+                        error = true;
+                        errorMessage = "Unknown error while creating account. Please contact developer.";
+                    }
                 } else {
                     error = true;
-                    errorMessage = "Account already exists.";
+                    errorMessage = "Account already exists";
                 }
             } else {
                 error = true;
-                errorMessage = "Invalid Credentials Provided."
+                errorMessage = "Invalid Credentials Provided"
             }
         } catch (e) {
             error = true;
@@ -377,7 +167,7 @@ function main() {
         }
     })
 
-    app.post("/api/login", (req, res) => {
+    app.post("/api/login", async(req, res) => {
         let error = false;
         let errorMessage = "Unknown Error. Please contact the developer of this application.";
         let response: Record<any, any> = {};
@@ -393,10 +183,10 @@ function main() {
                 message.password.length >= CONFIG.min_password_length &&
                 message.password.length <= CONFIG.max_password_length
             ) {
-                const account = ACCOUNTS.get(message.username);
-                if (account) {
-                    if (message.password === account.pass) {
-                        response = getNewLoginInfo(message.username, account, req.ip);
+                const accountInstance = ACCOUNTS.get(message.username);
+                if (accountInstance) {
+                    if (await ACCOUNTS.validatePassword(message.username, message.password)) {
+                        response = getNewLoginInfo(message.username, accountInstance, req.ip);
                     } else {
                         error = true;
                         errorMessage = "Incorrect Password!";
@@ -412,6 +202,7 @@ function main() {
         } catch (e) {
             error = true;
             console.log("POST_MESSAGE ERROR:", e);
+            errorMessage = "Unknown Error, Please contact developer.";
         }
 
         if (error) {
@@ -427,8 +218,6 @@ function main() {
             ).send(JSON.stringify({ error, response }));
         }
     })
-
-    const msgDatabase = new MessageDatabaseManager();
 
     app.get("/api/create_room", (req, res) => {
         const cookies = readCookies(req.headers.cookie || "");
@@ -449,13 +238,13 @@ function main() {
             } else {
                 express_reply(res, {
                     error: true,
-                    message: "token status: " + tokenValidity
+                    message: "Token Status: " + tokenValidity
                 })
             }
         } else {
             express_reply(res, {
                 error: true,
-                message: "invalid access token"
+                message: "Invalid Access Token"
             })
         }
     })
@@ -465,6 +254,7 @@ function main() {
         const accessToken = cookies.accessToken || false;
         const username = req.query["username"]?.toString() || "";
         const roomID = req.query["rid"]?.toString() || "";
+        const auth = req.query["auth"]?.toString() || "";
         let errorMessage = "";
         if (
             roomID &&
@@ -476,25 +266,25 @@ function main() {
                 if (tokenValidity === "valid") {
                     const room = msgDatabase.getRoom(roomID);
                     if (room) {
-                        if (room.creator === username) {
+                        if (room.creator === username || auth === SECRETS.ADMIN_AUTH) {
                             const done = msgDatabase.destroyRoom(roomID);
                             if (!done) {
                                 errorMessage = "Room 404";
                             }
                         } else {
-                            errorMessage = "unauthorized";
+                            errorMessage = "Unauthorized";
                         }
                     } else {
                         errorMessage = "Room 404";
                     }
                 } else {
-                    errorMessage = "token status: " + tokenValidity;
+                    errorMessage = "Token Status: " + tokenValidity;
                 }
             } else {
-                errorMessage = "invalid access token";
+                errorMessage = "Invalid Access Token";
             }
         } else {
-            errorMessage = "invalid params provided";
+            errorMessage = "Invalid Params Provided";
         }
 
         if (errorMessage.length > 0) {
@@ -511,6 +301,14 @@ function main() {
     wss.on("connection", (ws: WebSocketConnectedClient, req) => {
         // small one liner to send JSON data to the connected client
         const send = (data: {}) => { try { ws.send(JSON.stringify(data)) } catch (e) { console.log("WebSocket send err:", e) } };
+        const close_ws = (reason: string) => {
+            try {
+                try {
+                    ws.sendJSON({label: EVENTS.WS_CLOSE, message: reason});
+                } catch (e) {}
+                close_ws(closeReason);
+            } catch (e) {}
+        };
         Object.defineProperty(ws, "sendJSON", { value: send, writable: false, configurable: false });
 
         const cookies = readCookies(req.headers.cookie || "");
@@ -526,7 +324,7 @@ function main() {
                 try {
                     closeReason = "did not respond to pings";
                     forceClosed = true;
-                    ws.close();
+                    close_ws(closeReason);
                 } catch { };
             }
         }, CONFIG.ws_ping_timeout);
@@ -542,7 +340,7 @@ function main() {
             if (!isLoggedIn) {
                 forceClosed = true;
                 closeReason = "client did not login";
-                ws.close();
+                close_ws(closeReason);
             }
         }, 5e3);
 
@@ -573,7 +371,7 @@ function main() {
                     label: EVENTS.SHOW_ALERT,
                     message: closeReason
                 });
-                ws.close();
+                close_ws(closeReason);
                 return;
             }
             if (!forceClosed) {
@@ -600,13 +398,13 @@ function main() {
                                 isLoggedIn = true;
                                 console.log("[LOG] " + username + " > logged in");
                             } else {
-                                closeReason = "accessToken status: " + validity;
+                                closeReason = "accessToken Status: " + validity;
                                 forceClosed = true;
                                 send({
                                     label: EVENTS.SHOW_ALERT,
                                     message: closeReason
                                 });
-                                ws.close();
+                                close_ws(closeReason);
                             }
                         } else {
                             closeReason = "invalid username/accessToken provided";
@@ -615,7 +413,7 @@ function main() {
                                 label: EVENTS.SHOW_ALERT,
                                 message: closeReason
                             });
-                            ws.close();
+                            close_ws(closeReason);
                         }
                         break;
 
@@ -632,6 +430,7 @@ function main() {
                                 const roomInstance = msgDatabase.getRoom(data.rid);
                                 if (roomInstance) {
                                     roomInstance.addClient(username, ws);
+                                    send(roomInstance.lastUpdate);
                                     inRoom = true;
                                     room = roomInstance;
                                 } else {
@@ -641,7 +440,7 @@ function main() {
                                         label: EVENTS.SHOW_ALERT,
                                         message: closeReason
                                     });
-                                    ws.close();
+                                    close_ws(closeReason);
                                 }
                             } else {
                                 closeReason = "unauthorized";
@@ -650,7 +449,7 @@ function main() {
                                     label: EVENTS.SHOW_ALERT,
                                     message: closeReason
                                 });
-                                ws.close();
+                                close_ws(closeReason);
                             }
                         } else {
                             closeReason = "invalid room id provided";
@@ -659,7 +458,7 @@ function main() {
                                 label: EVENTS.SHOW_ALERT,
                                 message: closeReason
                             });
-                            ws.close();
+                            close_ws(closeReason);
                         }
                         break;
 
@@ -691,7 +490,7 @@ function main() {
 
     // Start the server
     server.listen(CONFIG.server_port, () => {
-        console.log("\n\t Server listening on PORT:", CONFIG.server_port);
+        console.log("\t Server listening on PORT:", CONFIG.server_port);
         console.log(`\t Access at http://127.0.0.1:${CONFIG.server_port}\n`);
     })
 }

@@ -1,7 +1,7 @@
 export default {
     "server_port": 80,
     "min_room_password_length": 5,
-    "accepting_new_registrations": false,
+    "accepting_new_registrations": true,
     "min_password_length": 4,
     "max_password_length": 30,
     "min_username_length": 3,
@@ -10,6 +10,7 @@ export default {
     "access_token_expire_interval": 1e3 * 60 * 60 * 24 * 7, // 7 days
     "storedFiles": {
         "accessTokens": "accesstokens.json",
-        "accounts": "accounts.json"
+        "accounts": "accounts.json",
+        "credentials": "account_credentials.json"
     }
 }

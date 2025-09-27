@@ -44,7 +44,7 @@
     <script src="./js/cssSwitcher.js"></script>
     <script src="./js/libs/marked.umd.js"></script>
     <script>
-        fetch(location.href.replace(location.pathname, "") + "/credits.md").then(res => res.text()).then(res => {
+        fetch((new URL("credits.md", location.origin))).then(res => res.text()).then(res => {
             document.getElementById("text-content").innerHTML = marked.parse(res);
         }).catch(e => {
             alert("CRITICAL FETCH/MARKDOWN PARSE ERROR! CHECK CONSOLE FOR DETAILS");

@@ -1,15 +1,22 @@
 import * as fs from "fs";
+import * as path from "path";
+
 export class StoreManager {
     path: string;
     encountered_error: boolean;
     stored_data: Record<string, any>;
 
-    constructor(path: string) {
-        this.path = path;
+    constructor(filename: string) {
+        const storagePath = path.join(__dirname, "../../storage");
+        if (!(fs.existsSync(storagePath))) {
+            fs.mkdirSync(storagePath, { recursive: true });
+        }
+
+        this.path = path.join(storagePath, filename);
         this.stored_data = {};
         this.encountered_error = false;
 
-        if(!(fs.existsSync(path))){
+        if(!(fs.existsSync(this.path))){
             this.save();
         }
         
@@ -20,7 +27,7 @@ export class StoreManager {
         return this.stored_data[key];
     }
 
-    set(key: string, value: {}) {
+    set(key: string, value: {} | string) {
         this.stored_data[key] = value;
         this.save();
     }
