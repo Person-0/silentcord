@@ -5,9 +5,9 @@ import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import * as express from "express";
 import * as bodyParser from "body-parser";
-import { config } from "dotenv";
 
 // User-Defined Modules
+import "./loggerpatch";
 import * as EVENTS from "../static/js/configs/events.json";
 import CONFIG from "./config";
 import ratelimiter from "./modules/ratelimiter";
@@ -15,33 +15,6 @@ import { AccessTokensManager, AccountManager, AccountInstance } from "./modules/
 import { MessageDatabaseManager } from "./modules/messages";
 import { WebSocketConnectedClient, Room } from "./modules/room";
 // ==================================================================
-
-// load .env into SECRETS object and not process.env
-const SECRETS: Record<string, string> = {};
-config({ debug: false, processEnv: SECRETS });
-
-// Logger //
-const _rawlog = console.log.bind(console);
-const ensureLength2 = (e: any) => {const t = e.toString(); return t.length === 1 ? ("0" + t) : t;}
-global.console.log = (...e) => {
-    const now = new Date();
-    const builtDateString = (
-        "[" +
-        [
-            now.getDate(),
-            now.getMonth() + 1,
-            now.getFullYear()
-        ].map(e => ensureLength2(e)).join("/") +
-        " " +
-        [
-            now.getHours(),
-            now.getMinutes(),
-            now.getSeconds()
-        ].map(e => ensureLength2(e)).join(":") +
-        "]"
-    )
-    return _rawlog(builtDateString, ...e);
-}
 
 // ==================================================================
 // Init
@@ -266,7 +239,7 @@ function main() {
                 if (tokenValidity === "valid") {
                     const room = msgDatabase.getRoom(roomID);
                     if (room) {
-                        if (room.creator === username || auth === SECRETS.ADMIN_AUTH) {
+                        if (room.creator === username && ACCOUNTS.get(username)?.isAdmin) {
                             const done = msgDatabase.destroyRoom(roomID);
                             if (!done) {
                                 errorMessage = "Room 404";
