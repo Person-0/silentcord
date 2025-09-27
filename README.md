@@ -11,7 +11,7 @@ A Discord inspired small and simple web-app to chat with people on a local area 
 
 ## TODO
 - ~~Basic text chat~~
-- Password encryption with the crypto module
+- ~~Password encryption with the bcrypt module~~
 - Database integration with MySQL
 - Voice Chat
 - Music-bot like channel
