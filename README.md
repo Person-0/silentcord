@@ -1,6 +1,8 @@
 # SilentCord
 A Discord inspired small and simple web-app to chat with people on a local area network with a room-based system.<br>
-Built with NodeJS, TypeScript (ExpressJS, WebSockets) & Vanilla HTML / CSS.
+Built with NodeJS, TypeScript (ExpressJS, WebSockets) & Vanilla HTML / CSS.<br>
+Uses bcrypt to securely store user passwords.<br><br>
+[*View Credits*](./static/credits.md)
 
 ## Preview
 
@@ -27,6 +29,3 @@ Built with NodeJS, TypeScript (ExpressJS, WebSockets) & Vanilla HTML / CSS.
     - Specific commmands:
         - ```npm run clean``` > Clean the access tokens, previously build code in /dist and other temp files if any.
         - ```npm run build``` > Runs the typescript build command
-
-## Credits
-- [Click here](./static/credits.md)
