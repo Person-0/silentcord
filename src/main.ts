@@ -175,7 +175,6 @@ function main() {
         } catch (e) {
             error = true;
             console.log("POST_MESSAGE ERROR:", e);
-            errorMessage = "Unknown Error, Please contact developer.";
         }
 
         if (error) {
@@ -197,6 +196,7 @@ function main() {
         const creator = req.query["username"]?.toString() || "";
         const password = req.query["password"]?.toString() || "";
         const accessToken = cookies.accessToken || false;
+        let errorMessage = "";
         if (typeof accessToken === "string") {
             const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(creator, accessToken);
             if (tokenValidity === "valid") {
@@ -209,15 +209,16 @@ function main() {
                     error: false
                 })
             } else {
-                express_reply(res, {
-                    error: true,
-                    message: "Token Status: " + tokenValidity
-                })
+                errorMessage = "Token Status: " + tokenValidity;
             }
         } else {
+            errorMessage = "Invalid Access Token";
+        }
+
+        if (errorMessage.length > 0) {
             express_reply(res, {
                 error: true,
-                message: "Invalid Access Token"
+                message: errorMessage
             })
         }
     })
@@ -372,14 +373,13 @@ function main() {
                             } else {
                                 closeReason = "accessToken Status: " + validity;
                                 forceClosed = true;
-                                send(EVENTS.SHOW_ALERT, {
-                                    message: closeReason
-                                });
-                                close_ws(closeReason);
                             }
                         } else {
                             closeReason = "invalid username/accessToken provided";
                             forceClosed = true;
+                        }
+
+                        if (forceClosed) {
                             send(EVENTS.SHOW_ALERT, {
                                 message: closeReason
                             });
@@ -417,10 +417,6 @@ function main() {
                                         } else {
                                             closeReason = "Invalid Room Password";
                                             forceClosed = true;
-                                            send(EVENTS.SHOW_ALERT, {
-                                                message: closeReason
-                                            });
-                                            close_ws(closeReason);
                                         }
                                     } else {
                                         addToRoom();
@@ -428,22 +424,17 @@ function main() {
                                 } else {
                                     closeReason = "Room 404";
                                     forceClosed = true;
-                                    send(EVENTS.SHOW_ALERT, {
-                                        message: closeReason
-                                    });
-                                    close_ws(closeReason);
                                 }
                             } else {
                                 closeReason = "unauthorized";
                                 forceClosed = true;
-                                send(EVENTS.SHOW_ALERT, {
-                                    message: closeReason
-                                });
-                                close_ws(closeReason);
                             }
                         } else {
                             closeReason = "invalid room id provided";
                             forceClosed = true;
+                        }
+
+                        if (forceClosed) {
                             send(EVENTS.SHOW_ALERT, {
                                 message: closeReason
                             });
