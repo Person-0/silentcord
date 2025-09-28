@@ -32,7 +32,7 @@
 }
 
 .bgdark {
-    background: #1C1C1C;
+    background: #121219/*#1C1C1C*/;
 }
 
 #leftbar {
@@ -60,6 +60,7 @@
     text-decoration: none;
     border-radius: 0;
     background: transparent;
+    border: none;
 }
 
 #chat-container {
@@ -144,7 +145,7 @@
     width: 15vw;
     min-width: 100px;
     height: 90vh;
-    background: #1d1d1d;
+    background: #121219/*#1d1d1d*/;
 }
 
 #connected-people-list {
@@ -159,7 +160,7 @@
     width: inherit;
     height: 6vh;
     max-height: 200px;
-    background: #212121;
+    background: #1b1d26/*#212121*/;
     margin-top: 5px;
     align-items: center;
 }

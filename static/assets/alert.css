@@ -6,7 +6,6 @@
     left: 0;
     top: 0;
     background: #00000061;
-    backdrop-filter: blur(2px);
     display: flex;
     flex-direction: column;
 }

@@ -22,7 +22,7 @@ body {
     margin: auto;
     width: 100vw;
     height: 100vh;
-    background: #212121;
+    background: #171820/*#212121*/;
 }
 
 #navigation-header {
@@ -33,7 +33,7 @@ body {
     top: 0;
     left: 0;
     margin: auto;
-    background: #191919;
+    background: #121319/*#191919*/;
     border-bottom: 1px solid black;
 }
 
@@ -75,7 +75,7 @@ body {
 
 .input-button {
     font-family: itim;
-    background: #2B2B2B;
+    background: #00000045/*#2B2B2B*/;
     box-shadow: 2px 2px 7px rgb(10 10 10 / 50%);
     padding-top: 1vh;
     padding-bottom: 1vh;
@@ -83,6 +83,7 @@ body {
     border: none;
     cursor: pointer;
     user-select: none;
+    border: 1px solid #ffffff4a;
 }
 .input-button:hover {
     color: #2B2B2B;
@@ -96,7 +97,7 @@ body {
 .footer {
     height: 5vh;
     width: 100vw;
-    background: #191919;
+    background: #121319/*#191919*/;
     border-top: 1px solid black;
     position: absolute;
     bottom: 0;
