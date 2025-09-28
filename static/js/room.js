@@ -158,19 +158,19 @@ function addNewMessage(author, epochTime, profileimg, messageContent) {
 
     if (lastUserMessage && lastUserMessage.author && lastUserMessage.author === author && (epochTime - lastUserMessage.epochTime) <= 5*60e3) {
         const lastMessageContentContainer = Array.from(document.querySelectorAll(".chat-user-msg")).pop();
-        lastMessageContentContainer.innerHTML += "<br>" + messageContent;
+        lastMessageContentContainer.innerHTML += "<br>";
+        lastMessageContentContainer.innerText += messageContent;
     } else {
         chatContainer.insertAdjacentHTML("beforeend", `
             <div class="chat-item">
                 <img class="chat-user-pfp" src="${profileimg}">
                 <div class="chat-user-msginfo">
                     <div class="chat-user-userNtime">${author} · <p class="time-string-inchat">${timeString}<p></div>
-                    <div class="chat-user-msg">
-                        ${messageContent}
-                    </div>
+                    <div class="chat-user-msg"></div>
                 </div>
             </div>
         `)
+        Array.from(document.querySelectorAll(".chat-user-msg")).pop().innerText = messageContent;
         lastUserMessage = { author, epochTime };
     }
 }

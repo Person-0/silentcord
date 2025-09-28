@@ -2,9 +2,6 @@ import { WebSocket } from "ws";
 import { MessageList, Message, UpdateInstance } from "./messages";
 import { AccountInstance, AccountManager } from "./accounts";
 import * as EVENTS from "../../static/js/configs/events.json";
-import { StoreManager } from "./store";
-
-const ACCOUNTS = new AccountManager();
 
 interface WebSocketConnectedClient extends WebSocket {
     sendJSON: (data: {}) => void
@@ -29,7 +26,7 @@ class Room {
     creator: string;
     connectedClients: Record<string, ConnectedClient>;
 
-    addClient(username: string, ws: WebSocketConnectedClient) {
+    addClient(username: string, ws: WebSocketConnectedClient, ACCOUNTS: AccountManager) {
         const account = ACCOUNTS.get(username);
         if (account) {
             this.connectedClients[username] = new ConnectedClient(ACCOUNTS.get(username), ws);

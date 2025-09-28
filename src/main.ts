@@ -401,7 +401,7 @@ function main() {
                                 }
                                 const roomInstance = msgDatabase.getRoom(data.rid);
                                 if (roomInstance) {
-                                    roomInstance.addClient(username, ws);
+                                    roomInstance.addClient(username, ws, ACCOUNTS);
                                     send(roomInstance.lastUpdate);
                                     inRoom = true;
                                     room = roomInstance;
