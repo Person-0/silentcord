@@ -16,7 +16,7 @@ Uses bcrypt to securely store user passwords.<br><br>
 - ~~Basic text chat~~
 - ~~Password encryption with the bcrypt module~~
 - ~~Make the room password work~~
-- ~~Database integration with MySQL~~ (DROPPED) Makes hosting locally inconvenient
+- ~~Database integration with MySQL ([mysql2](https://www.npmjs.com/package/mysql2))~~ (DROPPED) Makes hosting locally inconvenient
 - Ratelimits to prevent DDOS / DOS
 - Voice Chat
 - Music-bot like channel
