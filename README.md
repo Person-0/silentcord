@@ -15,8 +15,8 @@ Uses bcrypt to securely store user passwords.<br><br>
 ## TODO
 - ~~Basic text chat~~
 - ~~Password encryption with the bcrypt module~~
+- ~~Make the room password work~~
 - Database integration with MySQL
-- Make the room password work
 - Ratelimits to prevent DDOS / DOS
 - Voice Chat
 - Music-bot like channel

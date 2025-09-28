@@ -36,6 +36,8 @@ try {
 }
 
 async function submitLoginDetails(type) {
+    if(window.isShowingAlert) return;
+
     if (
         usernameInput.value.length < config.min_username_length ||
         passwordInput.value.length < config.min_password_length ||

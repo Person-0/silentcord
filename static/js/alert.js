@@ -22,11 +22,14 @@ window.alert = (text, isSuccessMessage) => {
     alertBoxContainer.appendChild(closeBtn);
     closeBtn.innerHTML = "Ok";
 
+    window.isShowingAlert = true;
+
     return new Promise((resolve) => {
         let timeout = setTimeout(() => {closeBtn.onclick()}, 5 * 60e3);
         closeBtn.onclick = () => {
             clearInterval(timeout);
             alertBoxContainer.remove();
+            window.isShowingAlert = false;
             resolve();
         };
     })

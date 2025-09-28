@@ -14,22 +14,24 @@ createRoomBtn.onclick = async () => {
     const params = new URLSearchParams();
     params.append("username", account.username);
     let roomPass = window.prompt("Enter the password to set for your room (optional)");
-    if (roomPass && roomPass.length) {
+    if (roomPass && roomPass.length > 0) {
         params.append("password", roomPass);
     } else if (roomPass == null) {
         return;
+    } else {
+        await alert("No Room password, anyone with the Room ID can join.");
     }
     const response = await fetch(location.origin + "/api/create_room?" + params.toString()).then(res => res.json());
     if (response.error) {
         if (response.message) {
-            alert(response.message);
+            await alert(response.message);
         } else {
-            alert("Unknown error. Please try again later.");
+            await alert("Unknown error. Please try again later.");
         }
     } else {
-        alert("Room Created Successfully. ID: " + response.id, true).then(() => {
-            location.href = "./room.html?rid=" + response.id;
-        });
+        await alert("Room Created Successfully. ID: " + response.id, true);
+        localStorage.setItem("lastRoomCreated", response.id);
+        location.href = "./room.html?rid=" + response.id;
     }
 }
 

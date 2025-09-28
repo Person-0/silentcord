@@ -238,7 +238,7 @@ function main() {
                 if (tokenValidity === "valid") {
                     const room = msgDatabase.getRoom(roomID);
                     if (room) {
-                        if (room.creator === username && ACCOUNTS.get(username)?.isAdmin) {
+                        if (room.creator === username || ACCOUNTS.get(username)?.isAdmin) {
                             const done = msgDatabase.destroyRoom(roomID);
                             if (!done) {
                                 errorMessage = "Room 404";
@@ -399,10 +399,32 @@ function main() {
                                 }
                                 const roomInstance = msgDatabase.getRoom(data.rid);
                                 if (roomInstance) {
-                                    roomInstance.addClient(username, ws, ACCOUNTS);
-                                    send(roomInstance.lastUpdate.label, roomInstance.lastUpdate);
-                                    inRoom = true;
-                                    room = roomInstance;
+                                    const addToRoom = () => {
+                                        roomInstance.addClient(username, ws, ACCOUNTS);
+                                        send(roomInstance.lastUpdate.label, roomInstance.lastUpdate);
+                                        inRoom = true;
+                                        room = roomInstance;
+                                    }
+                                    if (typeof roomInstance.password === "string") {
+                                        if (
+                                            (
+                                                typeof data.password === "string" &&
+                                                roomInstance.password === data.password
+                                            ) ||
+                                            username === roomInstance.creator
+                                        ) {
+                                            addToRoom();
+                                        } else {
+                                            closeReason = "Invalid Room Password";
+                                            forceClosed = true;
+                                            send(EVENTS.SHOW_ALERT, {
+                                                message: closeReason
+                                            });
+                                            close_ws(closeReason);
+                                        }
+                                    } else {
+                                        addToRoom();
+                                    }
                                 } else {
                                     closeReason = "Room 404";
                                     forceClosed = true;

@@ -8,6 +8,10 @@ const connectedPeopleList = document.getElementById("connected-people-list");
 
 const roomID = (new URLSearchParams(location.search)).get("rid");
 const socketURL = (new URL("api/ws", location.origin)).toString();
+let roomPassword = false;
+if(localStorage.getItem("lastRoomCreated") !== roomID){
+    roomPassword = window.prompt("Enter room password if any:") || false;
+}
 
 let account;
 let returnToLogin = false;
@@ -75,7 +79,8 @@ async function main() {
             username: account.username
         });
         send(EVENTS.ROOM, {
-            rid: roomID
+            rid: roomID,
+            password: roomPassword
         });
         clearChatList();
     }

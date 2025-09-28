@@ -1,6 +1,6 @@
 export default {
     "server_port": 80,
-    "min_room_password_length": 5,
+    "min_room_password_length": 0,
     "accepting_new_registrations": true,
     "min_password_length": 4,
     "max_password_length": 30,
