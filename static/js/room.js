@@ -14,41 +14,45 @@ let returnToLogin = false;
 let includeRIDwhenReturning = false;
 let lastUserMessage = { author: null, epochTime: 0 };
 
-if (roomID) {
-    let account_raw = localStorage.getItem("act");
-    if (account_raw) {
-        try {
-            account_raw = JSON.parse(atob(account_raw));
-        } catch (error) {
-            account_raw = undefined;
-        }
-        if (account_raw && account_raw.username) {
-            account = account_raw;
-            main().catch((err) => console.log(err));
-        } else {
-            includeRIDwhenReturning = returnToLogin = true;
-        }
-    } else {
-        includeRIDwhenReturning = returnToLogin = true;
-    }
-} else {
-    alert("Invalid Room ID");
-    returnToLogin = true;
-}
-
-if (returnToLogin) {
-    location.href = "./login.html?" + (includeRIDwhenReturning ? ("rid=" + roomID) : "");
-}
-
 chatAttachBtn.onclick = function(){
     alert("Attach file feature unimplemented. Coming soon.");
-}
+};
 
 window.showTab = function(tabName) {
     if(tabName !== "chat") {
         alert(tabName + " >> Unimplemented. Coming soon.");
     }
-}
+};
+
+(async() => {
+    if (roomID) {
+        let account_raw = localStorage.getItem("act");
+        if (account_raw) {
+            try {
+                account_raw = JSON.parse(atob(account_raw));
+            } catch (error) {
+                account_raw = undefined;
+            }
+            if (account_raw && account_raw.username) {
+                account = account_raw;
+                await main();
+            } else {
+                includeRIDwhenReturning = true;
+                returnToLogin = true;
+            }
+        } else {
+            includeRIDwhenReturning = true;
+            returnToLogin = true;
+        }
+    } else {
+        await alert("Invalid Room ID");
+        returnToLogin = true;
+    }
+
+    if (returnToLogin) {
+        location.href = "./login.html?" + (includeRIDwhenReturning ? ("rid=" + roomID) : "");
+    }
+})();
 
 async function main() {
     const EVENTS = await (fetch((new URL("js/configs/events.json", location.origin)).toString()).then(res => res.json()));
@@ -76,7 +80,7 @@ async function main() {
         clearChatList();
     }
 
-    ws.onmessage = (e) => {
+    ws.onmessage = async(e) => {
         let pkt = e.data.toString();
         try {
             pkt = JSON.parse(pkt);
@@ -95,7 +99,7 @@ async function main() {
                 break;
 
             case EVENTS.ROOM_DESTROY:
-                alert("Room was destroyed.");
+                await alert("Room was destroyed.");
                 break;
 
             case EVENTS.MESSAGE_NEW:
@@ -119,7 +123,7 @@ async function main() {
                 break;
 
             case EVENTS.SHOW_ALERT:
-                alert(data.message);
+                await alert(data.message, data.isSuccessMessage);
                 break;
             
             case EVENTS.WS_CLOSE:
@@ -138,13 +142,13 @@ async function main() {
         params.append("rid", roomID);
         const res = await fetch(location.origin + "/api/destroy_room?" + params.toString()).then(res => res.json());
         if (res.error) {
-            alert("Error: " + res.message);
+            await alert("Error: " + res.message);
         }
     }
 
     document.getElementById("copy-room-btn").onclick = () => {
         navigator.clipboard.writeText(location.href).then(
-            () => alert("Room URL copied to clipboard")
+            async() => alert("Room URL copied to clipboard", true)
         ).catch("Could not copy room id to clipboard. Room id: " + roomID);
     }
 

@@ -278,7 +278,7 @@ function main() {
                 try {
                     ws.sendJSON(EVENTS.WS_CLOSE, { message: reason });
                 } catch (e) { }
-                close_ws(closeReason);
+                ws.close();
             } catch (e) { }
         };
         Object.defineProperty(ws, "sendJSON", { value: send, writable: false, configurable: false });

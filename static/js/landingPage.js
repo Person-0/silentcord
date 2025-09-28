@@ -27,8 +27,9 @@ createRoomBtn.onclick = async () => {
             alert("Unknown error. Please try again later.");
         }
     } else {
-        alert("Room Created Successfully. ID: " + response.id);
-        location.href = "./room.html?rid=" + response.id;
+        alert("Room Created Successfully. ID: " + response.id, true).then(() => {
+            location.href = "./room.html?rid=" + response.id;
+        });
     }
 }
 
