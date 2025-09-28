@@ -82,7 +82,7 @@ function main() {
         return account_response;
     }
 
-    app.post("/api/signup", async(req, res) => {
+    app.post("/api/signup", async (req, res) => {
         let error = false;
         let errorMessage = "Unknown Error. Please contact the developer of this application.";
         let response: Record<any, any> = {};
@@ -107,7 +107,7 @@ function main() {
                 const account = ACCOUNTS.get(message.username);
                 if (!account) {
                     const createAccResult = await ACCOUNTS.set(message.username, message.password);
-                    if(createAccResult) {
+                    if (createAccResult) {
                         response = getNewLoginInfo(message.username, ACCOUNTS.get(message.username), req.ip);
                     } else {
                         error = true;
@@ -140,7 +140,7 @@ function main() {
         }
     })
 
-    app.post("/api/login", async(req, res) => {
+    app.post("/api/login", async (req, res) => {
         let error = false;
         let errorMessage = "Unknown Error. Please contact the developer of this application.";
         let response: Record<any, any> = {};
@@ -272,14 +272,14 @@ function main() {
     // WebSocket connection handler
     wss.on("connection", (ws: WebSocketConnectedClient, req) => {
         // small one liner to send JSON data to the connected client
-        const send = (data: {}) => { try { ws.send(JSON.stringify(data)) } catch (e) { console.log("WebSocket send err:", e) } };
+        const send = (label: string, data: {} = {}) => { try { ws.send(JSON.stringify([label, data])) } catch (e) { console.log("WebSocket send err:", e) } };
         const close_ws = (reason: string) => {
             try {
                 try {
-                    ws.sendJSON({label: EVENTS.WS_CLOSE, message: reason});
-                } catch (e) {}
+                    ws.sendJSON(EVENTS.WS_CLOSE, { message: reason });
+                } catch (e) { }
                 close_ws(closeReason);
-            } catch (e) {}
+            } catch (e) { }
         };
         Object.defineProperty(ws, "sendJSON", { value: send, writable: false, configurable: false });
 
@@ -291,7 +291,7 @@ function main() {
         let pingInterval = setInterval(() => {
             if (hasPinged) {
                 hasPinged = false;
-                send({ label: EVENTS.PING });
+                send(EVENTS.PING);
             } else {
                 try {
                     closeReason = "did not respond to pings";
@@ -332,22 +332,22 @@ function main() {
         })
 
         ws.on("message", (rawdata) => {
-            let data: Record<string, any>;
+            let pkt: [string, Record<string, any>];
             try {
-                data = JSON.parse(rawdata.toString());
-                if (!(typeof data.label === "string" && data.label.length > 0)) throw "invalid data format";
+                pkt = JSON.parse(rawdata.toString());
+                if (!(Array.isArray(pkt) && pkt.length > 0)) throw "invalid data format";
             } catch (error) {
                 closeReason = "malformed data provided";
                 forceClosed = true;
-                send({
-                    label: EVENTS.SHOW_ALERT,
+                send(EVENTS.SHOW_ALERT, {
                     message: closeReason
                 });
                 close_ws(closeReason);
                 return;
             }
             if (!forceClosed) {
-                switch (data.label) {
+                const [label, data] = pkt;
+                switch (label) {
 
                     case EVENTS.PING:
                         hasPinged = true;
@@ -372,8 +372,7 @@ function main() {
                             } else {
                                 closeReason = "accessToken Status: " + validity;
                                 forceClosed = true;
-                                send({
-                                    label: EVENTS.SHOW_ALERT,
+                                send(EVENTS.SHOW_ALERT, {
                                     message: closeReason
                                 });
                                 close_ws(closeReason);
@@ -381,8 +380,7 @@ function main() {
                         } else {
                             closeReason = "invalid username/accessToken provided";
                             forceClosed = true;
-                            send({
-                                label: EVENTS.SHOW_ALERT,
+                            send(EVENTS.SHOW_ALERT, {
                                 message: closeReason
                             });
                             close_ws(closeReason);
@@ -402,14 +400,13 @@ function main() {
                                 const roomInstance = msgDatabase.getRoom(data.rid);
                                 if (roomInstance) {
                                     roomInstance.addClient(username, ws, ACCOUNTS);
-                                    send(roomInstance.lastUpdate);
+                                    send(roomInstance.lastUpdate.label, roomInstance.lastUpdate);
                                     inRoom = true;
                                     room = roomInstance;
                                 } else {
                                     closeReason = "Room 404";
                                     forceClosed = true;
-                                    send({
-                                        label: EVENTS.SHOW_ALERT,
+                                    send(EVENTS.SHOW_ALERT, {
                                         message: closeReason
                                     });
                                     close_ws(closeReason);
@@ -417,8 +414,7 @@ function main() {
                             } else {
                                 closeReason = "unauthorized";
                                 forceClosed = true;
-                                send({
-                                    label: EVENTS.SHOW_ALERT,
+                                send(EVENTS.SHOW_ALERT, {
                                     message: closeReason
                                 });
                                 close_ws(closeReason);
@@ -426,8 +422,7 @@ function main() {
                         } else {
                             closeReason = "invalid room id provided";
                             forceClosed = true;
-                            send({
-                                label: EVENTS.SHOW_ALERT,
+                            send(EVENTS.SHOW_ALERT, {
                                 message: closeReason
                             });
                             close_ws(closeReason);
@@ -442,14 +437,12 @@ function main() {
                             ) {
                                 room.messages.add(username, data.content);
                             } else {
-                                send({
-                                    label: EVENTS.SHOW_ALERT,
+                                send(EVENTS.SHOW_ALERT, {
                                     message: "invalid message sent"
                                 });
                             }
                         } else {
-                            send({
-                                label: EVENTS.SHOW_ALERT,
+                            send(EVENTS.SHOW_ALERT, {
                                 message: "cannot send message if not in room"
                             });
                         }

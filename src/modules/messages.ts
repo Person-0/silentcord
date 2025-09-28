@@ -19,12 +19,11 @@ class Message {
 class UpdateInstance {
     label: string;
     timestamp: number;
-    data: any;
 
     constructor(label: string, data: any, timestamp: number = Date.now()) {
         this.label = label;
-        this.data = data;
         this.timestamp = timestamp;
+        Object.assign(this, data);
     }
 }
 

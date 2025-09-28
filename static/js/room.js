@@ -1,3 +1,5 @@
+const messageBreakTimer = 5*60e3; // continous messages from same author is broken after this gap (in ms)
+
 const chatContainer = document.getElementById("chat-container");
 const chatInput = document.getElementById("chat-input");
 const chatAttachBtn = document.getElementById("chat-attach-btn");
@@ -6,9 +8,12 @@ const connectedPeopleList = document.getElementById("connected-people-list");
 
 const roomID = (new URLSearchParams(location.search)).get("rid");
 const socketURL = (new URL("api/ws", location.origin)).toString();
+
 let account;
 let returnToLogin = false;
 let includeRIDwhenReturning = false;
+let lastUserMessage = { author: null, epochTime: 0 };
+
 if (roomID) {
     let account_raw = localStorage.getItem("act");
     if (account_raw) {
@@ -51,37 +56,42 @@ async function main() {
     const ws = new WebSocket(socketURL);
     ws.isOpen = false;
 
-    const send = (data) => ws.send(JSON.stringify(data));
-    window.ws_send = send;
+    const send = (label, data = {}) => {
+        if(ws.isOpen) {
+            ws.send(JSON.stringify([label, data]))
+        } else {
+            setTimeout(()=>{send(label, data)}, 100);
+        }
+    };
+    //window.ws_send = send;
 
     ws.onopen = () => {
         ws.isOpen = true;
-        send({
-            label: EVENTS.LOGIN,
+        send(EVENTS.LOGIN, {
             username: account.username
         });
-        send({
-            label: EVENTS.ROOM,
+        send(EVENTS.ROOM, {
             rid: roomID
         });
         clearChatList();
     }
 
     ws.onmessage = (e) => {
-        let data = e.data.toString();
+        let pkt = e.data.toString();
         try {
-            data = JSON.parse(data);
-            if (!data.label) {
-                throw "no data label";
+            pkt = JSON.parse(pkt);
+            if (!(Array.isArray(pkt) && pkt.length > 0)) {
+                throw "bad data";
             }
         } catch (error) {
             console.log("Message parse error:", error);
             return;
         }
 
-        switch (data.label) {
+        const [label, data] = pkt;
+        switch (label) {
             case EVENTS.PING:
-                send({ label: EVENTS.PING });
+                send(EVENTS.PING);
                 break;
 
             case EVENTS.ROOM_DESTROY:
@@ -89,19 +99,23 @@ async function main() {
                 break;
 
             case EVENTS.MESSAGE_NEW:
-                addNewMessage(data.data.author, data.data.timestamp, "./assets/img/hand_drawn_account.png", data.data.content);
+                addNewMessage(data.author, data.timestamp, "./assets/img/hand_drawn_account.png", data.content);
                 break;
 
             case EVENTS.USER_JOIN:
-                addNewOnlinePerson(data.data.username, "./assets/img/hand_drawn_account.png");
+                addNewOnlinePerson(data.username, "./assets/img/hand_drawn_account.png");
                 break;
             
             case EVENTS.USER_LEAVE:
-                removeOnlinePerson(data.data.username);
+                removeOnlinePerson(data.username);
                 break;
 
             case EVENTS.__DEV_REJOIN:
                 location.href = location.href;
+                break;
+
+            case EVENTS.__DEV_CLEARCHAT:
+                clearChatList();
                 break;
 
             case EVENTS.SHOW_ALERT:
@@ -137,8 +151,7 @@ async function main() {
     chatInput.onkeydown = (e) => {
         if (e.key === "Enter") {
             if (chatInput.value.length > 0) {
-                send({
-                    label: EVENTS.MESSAGE_NEW,
+                send(EVENTS.MESSAGE_NEW, {
                     content: chatInput.value
                 });
                 chatInput.value = "";
@@ -151,12 +164,18 @@ function clearChatList() {
     chatContainer.innerHTML = "";
 }
 
-let lastUserMessage = {};
 function addNewMessage(author, epochTime, profileimg, messageContent) {
     const newDate = new Date(epochTime);
-    const timeString = newDate.getHours() + ":" + newDate.getMinutes();
+    const timeString = [newDate.getHours(), newDate.getMinutes()].map(e => {
+        const t = e.toString();
+        return t.length === 1 ? ("0" + t) : t;
+    }).join(":");
 
-    if (lastUserMessage && lastUserMessage.author && lastUserMessage.author === author && (epochTime - lastUserMessage.epochTime) <= 5*60e3) {
+    if (
+        lastUserMessage.author &&
+        lastUserMessage.author === author &&
+        (epochTime - lastUserMessage.epochTime) <= messageBreakTimer
+    ) {
         const lastMessageContentContainer = Array.from(document.querySelectorAll(".chat-user-msg")).pop();
         lastMessageContentContainer.innerHTML += "<br>";
         lastMessageContentContainer.innerText += messageContent;
@@ -175,13 +194,16 @@ function addNewMessage(author, epochTime, profileimg, messageContent) {
     }
 }
 
-function addNewOnlinePerson(username, profileimg) {
+function addNewOnlinePerson(username, profileimurl) {
     connectedPeopleList.insertAdjacentHTML("beforeend", `
-    <div class="connected-people-item" data-connected-user-username="${username}">
-        <img class="item-user-pfp" src="${profileimg}">
-        <p class="item-user-name">${username}</p>
+    <div class="connected-people-item">
+        <img class="item-user-pfp" src="${profileimurl}">
+        <p class="item-user-name"></p>
     </div>
     `);
+    const lastItem = Array.from(document.querySelectorAll(".connected-people-item")).pop();
+    lastItem.setAttribute("data-connected-user-username", username);
+    lastItem.querySelector(".item-user-name").innerText = username;
     connectedPeopleValue.innerHTML = parseInt(connectedPeopleValue.innerHTML) + 1;
 }
 

@@ -10,5 +10,6 @@
     "ROOM": "r",
     "SHOW_ALERT": "sa",
     "WS_CLOSE": "wsclse",
-    "__DEV_REJOIN__": ".dr."
+    "__DEV_REJOIN__": ".dr.",
+    "__DEV_CLEARCHAT": ".dc."
 }

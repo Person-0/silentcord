@@ -4,7 +4,7 @@ import { AccountInstance, AccountManager } from "./accounts";
 import * as EVENTS from "../../static/js/configs/events.json";
 
 interface WebSocketConnectedClient extends WebSocket {
-    sendJSON: (data: {}) => void
+    sendJSON: (label: string, data: {}) => void
 }
 
 class ConnectedClient {
@@ -32,7 +32,7 @@ class Room {
             this.connectedClients[username] = new ConnectedClient(ACCOUNTS.get(username), ws);
             // send all connected users to this client
             for (const [username, client] of Object.entries(this.connectedClients)) {
-                ws.sendJSON(new UpdateInstance(EVENTS.USER_JOIN, {username}));
+                ws.sendJSON(EVENTS.USER_JOIN, {username});
             }
             // tell all other clients that this user joined
             this.broadcastUpdate(new UpdateInstance(EVENTS.USER_JOIN, { username }), username);
@@ -63,7 +63,8 @@ class Room {
                 }
             }
 
-            client.ws.sendJSON(update);
+            const { label, ...packet } = update;
+            client.ws.sendJSON(label, packet);
             if(callbackPerClient) callbackPerClient(client);
         }
     }
