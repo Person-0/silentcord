@@ -346,53 +346,22 @@ function main() {
                 close_ws(closeReason);
                 return;
             }
-            if (!forceClosed) {
-                const [label, data] = pkt;
-                switch (label) {
 
-                    case EVENTS.PING:
-                        hasPinged = true;
-                        break;
+            if (forceClosed) return;
 
-                    case EVENTS.LOGIN:
-                        if (
-                            typeof data.username === "string" &&
-                            data.username.length >= CONFIG.min_username_length &&
-                            data.username.length <= CONFIG.max_username_length &&
-                            ACCOUNTS.get(data.username) &&
-                            typeof cookies.accessToken === "string" &&
-                            cookies.accessToken.length > 0
-                        ) {
-                            const validity = ACCOUNT_TOKENS.validateAccessToken(data.username, cookies.accessToken);
-                            if (validity === "valid") {
-                                clearTimeout(loginTimeout);
-                                loggedInAccount = ACCOUNTS.get(data.username);
-                                username = data.username;
-                                isLoggedIn = true;
-                                console.log("[LOG] " + username + " > logged in");
-                            } else {
-                                closeReason = "accessToken Status: " + validity;
-                                forceClosed = true;
-                            }
-                        } else {
-                            closeReason = "invalid username/accessToken provided";
-                            forceClosed = true;
-                        }
+            const [label, data] = pkt;
 
-                        if (forceClosed) {
-                            send(EVENTS.SHOW_ALERT, {
-                                message: closeReason
-                            });
-                            close_ws(closeReason);
-                        }
-                        break;
+            if(label === EVENTS.PING) {
+                hasPinged = true;
+            } else {
+                if(isLoggedIn){
+                    switch(label) {
 
-                    case EVENTS.ROOM:
-                        if (
-                            typeof data.rid === "string" &&
-                            data.rid.length > 0
-                        ) {
-                            if (isLoggedIn) {
+                        case EVENTS.ROOM:
+                            if (
+                                typeof data.rid === "string" &&
+                                data.rid.length > 0
+                            ) {
                                 if (inRoom) {
                                     room.removeClient(username);
                                     inRoom = false;
@@ -426,42 +395,75 @@ function main() {
                                     forceClosed = true;
                                 }
                             } else {
-                                closeReason = "unauthorized";
+                                closeReason = "invalid room id provided";
                                 forceClosed = true;
                             }
-                        } else {
-                            closeReason = "invalid room id provided";
-                            forceClosed = true;
-                        }
+                            break;
+                            
+                    }
 
-                        if (forceClosed) {
-                            send(EVENTS.SHOW_ALERT, {
-                                message: closeReason
-                            });
-                            close_ws(closeReason);
-                        }
-                        break;
+                    if(inRoom) {
+                        switch (label) {
 
-                    case EVENTS.MESSAGE_NEW:
-                        if (inRoom) {
+                            case EVENTS.MESSAGE_NEW:
+                                if (
+                                    typeof data.content === "string" &&
+                                    data.content.length > 0
+                                ) {
+                                    room.messages.add(username, data.content);
+                                } else {
+                                    send(EVENTS.SHOW_ALERT, {
+                                        message: "invalid message sent"
+                                    });
+                                }
+                                break;
+
+
+                        }
+                    } else {
+                        switch(label) {
+                            default: 
+                                break;
+                        }
+                    }
+                } else {
+                    switch(label) {
+
+                        case EVENTS.LOGIN:
                             if (
-                                typeof data.content === "string" &&
-                                data.content.length > 0
+                                typeof data.username === "string" &&
+                                data.username.length >= CONFIG.min_username_length &&
+                                data.username.length <= CONFIG.max_username_length &&
+                                ACCOUNTS.get(data.username) &&
+                                typeof cookies.accessToken === "string" &&
+                                cookies.accessToken.length > 0
                             ) {
-                                room.messages.add(username, data.content);
+                                const validity = ACCOUNT_TOKENS.validateAccessToken(data.username, cookies.accessToken);
+                                if (validity === "valid") {
+                                    clearTimeout(loginTimeout);
+                                    loggedInAccount = ACCOUNTS.get(data.username);
+                                    username = data.username;
+                                    isLoggedIn = true;
+                                    console.log("[LOG] " + username + " > logged in");
+                                } else {
+                                    closeReason = "accessToken Status: " + validity;
+                                    forceClosed = true;
+                                }
                             } else {
-                                send(EVENTS.SHOW_ALERT, {
-                                    message: "invalid message sent"
-                                });
+                                closeReason = "invalid username/accessToken provided";
+                                forceClosed = true;
                             }
-                        } else {
-                            send(EVENTS.SHOW_ALERT, {
-                                message: "cannot send message if not in room"
-                            });
-                        }
-                        break;
+                            break;
 
+                    }
                 }
+            }
+
+            if (forceClosed) {
+                send(EVENTS.SHOW_ALERT, {
+                    message: closeReason
+                });
+                close_ws(closeReason);
             }
         })
     })

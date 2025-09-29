@@ -5,7 +5,7 @@
     margin: auto;
     left: 0;
     top: 0;
-    background: #00000061;
+    background: #000000ad;
     display: flex;
     flex-direction: column;
 }
@@ -14,7 +14,7 @@
     width: 20vw!important;
     margin-left: auto!important;
     margin-right: auto!important;
-    margin-top: 1vh!important;
+    margin-top: 1vh!important;      
     margin-bottom: auto!important;
     border: 1px solid white;
     background: #000000;
