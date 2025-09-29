@@ -12,31 +12,22 @@ const config = window.config = {
 
 window.switchCSS("loginPageCSS");
 document.getElementById("acc-toggle-btn").innerHTML = "Login";
-document.getElementById("acc-toggle-btn").onclick = function(){ location.href = location.origin + "/login.html" };
+document.getElementById("acc-toggle-btn").onclick = function () { location.href = location.origin + "/login.html" };
 
 try {
     // show login page only if accessToken cookie does not exist / expired
-    if (!document.cookie.includes("accessToken=")) {
-        window.localStorage.clear();
-        throw "token cookie either expired or this is a new user. showing login page only.";
-    }
-
-    let accdata = window.localStorage.getItem("act");
-    if (accdata) {
-        // try parsing the account data & showing the landing page
-        accdata = JSON.parse(atob(accdata));
-        loginSuccess(accdata);
+    if (document.cookie.includes("accessToken=")) {
+        loginSuccess(localStorage.getItem("act") || "");
     } else {
-        // clear cookies and localStorage for a fresh login experience
-        window.localStorage.clear();
         clearCookies();
+        throw "token cookie either expired or this is a new user. showing login page only.";
     }
 } catch (e) {
     console.log(e);
 }
 
 async function submitLoginDetails(type) {
-    if(window.isShowingAlert) return;
+    if (window.isShowingAlert) return;
 
     if (
         usernameInput.value.length < config.min_username_length ||
@@ -59,32 +50,24 @@ async function submitLoginDetails(type) {
         }
     ).then(res => res.json());
 
-    if (res.error || !res.response) {
+    if (res.error) {
         if (res.message) {
             alert(res.message);
         } else {
             alert("Unknown Error, Please try again later.");
         }
     } else {
-        loginSuccess(res.response);
+        loginSuccess(usernameInput.value);
     }
 }
 
-function loginSuccess(account) {
+function loginSuccess(username) {
     // remove login screen & enter event listener if no errors arised in previous statements
     document.getElementById("login-container").remove();
     window.removeEventListener("keydown", keyDownHandlerLogin);
 
-    // throw error if username not present in account data
-    if (!account.username) {
-        throw "account data does not have username";
-    }
-
-    // save login data (no passwords stored here) in localStorage
-    window.localStorage.setItem("act", btoa(JSON.stringify(account)));
-
     // show landing page from ./js/landingPage.js
-    window.show_landing_page(account);
+    window.show_landing_page(username);
 }
 
 signUpBtn.onclick = () => submitLoginDetails("signup");

@@ -20,29 +20,40 @@
         </div>
     </div>
 
-    <div id="main-container">
-        <div id="leftbar" class="bgdark">
-            <div class="leftbar-btns">
-                <button class="input-button leftbar-btn" onclick="showTab('chat')">
-                    <span class="material-symbols-outlined material-icon-icon">
-                        chat
-                    </span>
-                </button>
-                <button class="input-button leftbar-btn" onclick="showTab('vc')">
-                    <span class="material-symbols-outlined material-icon-icon">
-                        voice_chat
-                    </span>
-                </button>
-                <button class="input-button leftbar-btn" onclick="showTab('music')">
-                    <span class="material-symbols-outlined material-icon-icon">
-                        queue_music
-                    </span>
-                </button>
-            </div>
+    <div id="leftbar" class="bgdark">
+        <div class="leftbar-btns">
+            <button class="input-button leftbar-btn leftbar-btn-selected" onclick="showTab('c', ()=>selectLeftbarBtn(this));">
+                <span class="material-symbols-outlined material-icon-icon">
+                    chat
+                </span>
+            </button>
+            <button class="input-button leftbar-btn" onclick="showTab('v', ()=>selectLeftbarBtn(this));">
+                <span class="material-symbols-outlined material-icon-icon">
+                    voice_chat
+                </span>
+            </button>
+            <button class="input-button leftbar-btn" onclick="showTab('m', ()=>selectLeftbarBtn(this));">
+                <span class="material-symbols-outlined material-icon-icon">
+                    queue_music
+                </span>
+            </button>
         </div>
+    </div>
 
+    <div id="main-container-chat" tab-id="c" style="display: flex;" class="tabs">
         <div id="chat-container" class="bgdark"></div>
+        <div id="chat-inputs-container">
+            <input class="input-textbox" type="text" id="chat-input" placeholder="Enter message here...">
+            <button class="input-button chatbox-btn" id="chat-attach-btn">
+                <span class="material-symbols-outlined material-icon-icon">
+                    attach_file_add
+                </span>
+            </button>
+        </div>
+    </div>
 
+    <div id="main-container-voicechat" tab-id="" style="display: flex;" class="tabs">
+        
     </div>
 
     <div id="connected-people-list-container">
@@ -51,15 +62,6 @@
         <div id="connected-people-list">
 
         </div>
-    </div>
-
-    <div id="chat-inputs-container">
-        <input class="input-textbox" type="text" id="chat-input" placeholder="Enter message here...">
-        <button class="input-button chatbox-btn" id="chat-attach-btn">
-            <span class="material-symbols-outlined material-icon-icon">
-                attach_file_add
-            </span>
-        </button>
     </div>
 
     <script src="./js/room.js" type="module"></script>

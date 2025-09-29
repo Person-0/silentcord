@@ -35,23 +35,47 @@ createRoomBtn.onclick = async () => {
     }
 }
 
-window.show_landing_page = function show_landing_page(accountData) {
+window.show_landing_page = async function show_landing_page(username) {
     const roomID = (new URLSearchParams(location.search)).get("rid");
-    if(roomID) {
+    if (roomID) {
         location.href = "./room.html?rid=" + roomID;
     }
 
-    account = accountData;
+    const params = new URLSearchParams();
+    params.append("username", username);
+    const res = await fetch(location.origin + "/api/account?" + params.toString()).then(res => res.json()).catch(err => console.log(err));
 
-    usernameContainer.innerHTML = account.name;
-    ipaddrContainer.innerHTML = account.ip;
+    if (typeof res === "object" && !res.error) {
+        account = res.data;
 
-    window.switchCSS("landingPageCSS");
-    document.getElementById("landing-page").style.display = "block";
-    document.getElementById("acc-toggle-btn").innerHTML = "Logout";
-    document.getElementById("acc-toggle-btn").onclick = function(){ 
-        localStorage.clear();
-        clearCookies();
-        location.reload();
-    };
+        // save username & accountdata in localStorage
+        window.localStorage.setItem("act", username);
+        window.localStorage.setItem("act_data", btoa(JSON.stringify(account)));
+
+        usernameContainer.innerHTML = account.name;
+        ipaddrContainer.innerHTML = account.ip;
+
+        window.switchCSS("landingPageCSS");
+        document.getElementById("landing-page").style.display = "block";
+        document.getElementById("acc-toggle-btn").innerHTML = "Logout";
+        document.getElementById("acc-toggle-btn").onclick = logoutAccount;
+    } else {
+        await alert((res ? (res.message || false) : false) || "Error while fetching account details");
+        logoutAccount();
+    }
+}
+
+async function logoutAccount() {
+    await logoutOtherSessions();
+    localStorage.clear();
+    clearCookies();
+    location.reload();
+}
+
+async function logoutOtherSessions() {
+    try {
+        const params = new URLSearchParams();
+        params.append("username", localStorage.getItem("act"));
+        await fetch(location.origin + "/api/account?" + params.toString());
+    } catch (e) { console.log("logout:", e); }
 }

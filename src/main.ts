@@ -65,27 +65,10 @@ function main() {
     app.use(express.static(path.join(__dirname, "../static")));
 
     // login & signup
-    /**
-     * 
-     * @param username `username` of account
-     * @param account `AccountInstance` from `ACCOUNTS.get(...)`
-     * @param ip `req.ip` from express app request
-     * @returns `{username: string, ip: string, accessToken: string, isAdmin: boolean}`
-     */
-    function getNewLoginInfo(username: string, account: AccountInstance, ip: string = "???"): Record<string, string | boolean> {
-        const account_response: Record<string, string | boolean> = { ...account }; // ez object duplicate
-        delete account_response.pass; // remove pass string from account info
-        account_response.ip = ip;
-        account_response.username = username;
-        const newAccessToken = ACCOUNT_TOKENS.createAccessToken(username);
-        account_response.accessToken = newAccessToken;
-        return account_response;
-    }
-
     app.post("/api/signup", async (req, res) => {
         let error = false;
         let errorMessage = "Unknown Error. Please contact the developer of this application.";
-        let response: Record<any, any> = {};
+        let response: string = "";
         try {
             const message: Record<string, string> = JSON.parse(req.body);
 
@@ -108,7 +91,7 @@ function main() {
                 if (!account) {
                     const createAccResult = await ACCOUNTS.set(message.username, message.password);
                     if (createAccResult) {
-                        response = getNewLoginInfo(message.username, ACCOUNTS.get(message.username), req.ip);
+                        response = ACCOUNT_TOKENS.createAccessToken(message.username);
                     } else {
                         error = true;
                         errorMessage = "Unknown error while creating account. Please contact developer.";
@@ -134,16 +117,16 @@ function main() {
         } else {
             res.cookie(
                 "accessToken",
-                response.accessToken,
+                response,
                 { maxAge: CONFIG.access_token_expire_interval }
-            ).send(JSON.stringify({ error, response }));
+            ).send(JSON.stringify({ error }));
         }
     })
 
     app.post("/api/login", async (req, res) => {
         let error = false;
         let errorMessage = "Unknown Error. Please contact the developer of this application.";
-        let response: Record<any, any> = {};
+        let response: string = "";
         try {
             const message: Record<string, string> = JSON.parse(req.body);
             if (
@@ -159,7 +142,7 @@ function main() {
                 const accountInstance = ACCOUNTS.get(message.username);
                 if (accountInstance) {
                     if (await ACCOUNTS.validatePassword(message.username, message.password)) {
-                        response = getNewLoginInfo(message.username, accountInstance, req.ip);
+                        response = ACCOUNT_TOKENS.createAccessToken(message.username);
                     } else {
                         error = true;
                         errorMessage = "Incorrect Password!";
@@ -185,9 +168,74 @@ function main() {
         } else {
             res.cookie(
                 "accessToken",
-                response.accessToken,
+                response,
                 { maxAge: CONFIG.access_token_expire_interval }
-            ).send(JSON.stringify({ error, response }));
+            ).send(JSON.stringify({ error }));
+        }
+    })
+
+    app.get("/api/logout", (req, res) => {
+        const cookies = readCookies(req.headers.cookie || "");
+        const username = req.query["username"]?.toString() || "";
+        const accessToken = cookies.accessToken || false;
+        let errorMessage = "";
+        if (
+            typeof accessToken === "string" &&
+            typeof username === "string" &&
+            accessToken.length > 10 &&
+            username.length >= CONFIG.min_room_password_length &&
+            ACCOUNTS.exists(username)
+        ) {
+            const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
+            if (tokenValidity === "valid") {
+                errorMessage = ACCOUNT_TOKENS.deleteAccessToken(username) ? "Could not delete access token" : "";
+            } else {
+                errorMessage = "Token Status: " + tokenValidity;
+            }
+        } else {
+            errorMessage = "Invalid Access Token / Username";
+        }
+
+        express_reply(res, {
+            error: errorMessage.length > 0,
+            message: errorMessage
+        })
+    })
+
+    app.get("/api/account", (req, res) => {
+        const cookies = readCookies(req.headers.cookie || "");
+        const username = req.query["username"]?.toString() || "";
+        const accessToken = cookies.accessToken || false;
+        let errorMessage = "";
+        if (
+            typeof accessToken === "string" &&
+            typeof username === "string" &&
+            accessToken.length > 10 &&
+            username.length >= CONFIG.min_room_password_length &&
+            ACCOUNTS.exists(username)
+        ) {
+            const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
+            if (tokenValidity === "valid") {
+                express_reply(res, {
+                    data: {
+                        ...ACCOUNTS.get(username),
+                        ip: req.ip,
+                        username
+                    },
+                    error: false
+                })
+            } else {
+                errorMessage = "Token Status: " + tokenValidity;
+            }
+        } else {
+            errorMessage = "Invalid Access Token / Username";
+        }
+
+        if (errorMessage.length > 0) {
+            express_reply(res, {
+                error: true,
+                message: errorMessage
+            })
         }
     })
 
@@ -351,11 +399,11 @@ function main() {
 
             const [label, data] = pkt;
 
-            if(label === EVENTS.PING) {
+            if (label === EVENTS.PING) {
                 hasPinged = true;
             } else {
-                if(isLoggedIn){
-                    switch(label) {
+                if (isLoggedIn) {
+                    switch (label) {
 
                         case EVENTS.ROOM:
                             if (
@@ -365,6 +413,7 @@ function main() {
                                 if (inRoom) {
                                     room.removeClient(username);
                                     inRoom = false;
+                                    room = {} as Room;
                                 }
                                 const roomInstance = msgDatabase.getRoom(data.rid);
                                 if (roomInstance) {
@@ -399,10 +448,10 @@ function main() {
                                 forceClosed = true;
                             }
                             break;
-                            
+
                     }
 
-                    if(inRoom) {
+                    if (inRoom) {
                         switch (label) {
 
                             case EVENTS.MESSAGE_NEW:
@@ -421,13 +470,13 @@ function main() {
 
                         }
                     } else {
-                        switch(label) {
-                            default: 
+                        switch (label) {
+                            default:
                                 break;
                         }
                     }
                 } else {
-                    switch(label) {
+                    switch (label) {
 
                         case EVENTS.LOGIN:
                             if (

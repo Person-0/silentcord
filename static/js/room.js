@@ -1,4 +1,4 @@
-const messageBreakTimer = 5*60e3; // continous messages from same author is broken after this gap (in ms)
+const messageBreakTimer = 5 * 60e3; // continous messages from same author is broken after this gap (in ms)
 
 const chatContainer = document.getElementById("chat-container");
 const chatInput = document.getElementById("chat-input");
@@ -8,29 +8,16 @@ const connectedPeopleList = document.getElementById("connected-people-list");
 
 const roomID = (new URLSearchParams(location.search)).get("rid");
 const socketURL = (new URL("api/ws", location.origin)).toString();
-let roomPassword = false;
-if(localStorage.getItem("lastRoomCreated") !== roomID){
-    roomPassword = window.prompt("Enter room password if any:") || false;
-}
 
 let account;
 let returnToLogin = false;
 let includeRIDwhenReturning = false;
+let roomPassword = false;
 let lastUserMessage = { author: null, epochTime: 0 };
 
-chatAttachBtn.onclick = function(){
-    alert("Attach file feature unimplemented. Coming soon.");
-};
-
-window.showTab = function(tabName) {
-    if(tabName !== "chat") {
-        alert(tabName + " >> Unimplemented. Coming soon.");
-    }
-};
-
-(async() => {
+(async () => {
     if (roomID) {
-        let account_raw = localStorage.getItem("act");
+        let account_raw = localStorage.getItem("act_data");
         if (account_raw) {
             try {
                 account_raw = JSON.parse(atob(account_raw));
@@ -39,12 +26,17 @@ window.showTab = function(tabName) {
             }
             if (account_raw && account_raw.username) {
                 account = account_raw;
+                if (localStorage.getItem("lastRoomCreated") !== roomID) {
+                    roomPassword = window.prompt("Enter room password if any:") || false;
+                }
                 await main();
             } else {
+                console.log("returning to login, account data not valid json / username does not exist in account data");
                 includeRIDwhenReturning = true;
                 returnToLogin = true;
             }
         } else {
+            console.log("returning to login, account data does not exist");
             includeRIDwhenReturning = true;
             returnToLogin = true;
         }
@@ -65,10 +57,10 @@ async function main() {
     ws.isOpen = false;
 
     const send = (label, data = {}) => {
-        if(ws.isOpen) {
+        if (ws.isOpen) {
             ws.send(JSON.stringify([label, data]))
         } else {
-            setTimeout(()=>{send(label, data)}, 100);
+            setTimeout(() => { send(label, data) }, 100);
         }
     };
     //window.ws_send = send;
@@ -85,7 +77,7 @@ async function main() {
         clearChatList();
     }
 
-    ws.onmessage = async(e) => {
+    ws.onmessage = async (e) => {
         let pkt = e.data.toString();
         try {
             pkt = JSON.parse(pkt);
@@ -114,7 +106,7 @@ async function main() {
             case EVENTS.USER_JOIN:
                 addNewOnlinePerson(data.username, "./assets/img/hand_drawn_account.png");
                 break;
-            
+
             case EVENTS.USER_LEAVE:
                 removeOnlinePerson(data.username);
                 break;
@@ -130,7 +122,7 @@ async function main() {
             case EVENTS.SHOW_ALERT:
                 await alert(data.message, data.isSuccessMessage);
                 break;
-            
+
             case EVENTS.WS_CLOSE:
                 console.log("WS CLOSED:", data.message);
                 break;
@@ -153,9 +145,13 @@ async function main() {
 
     document.getElementById("copy-room-btn").onclick = () => {
         navigator.clipboard.writeText(location.href).then(
-            async() => alert("Room URL copied to clipboard", true)
+            async () => alert("Room URL copied to clipboard", true)
         ).catch("Could not copy room id to clipboard. Room id: " + roomID);
     }
+
+    let isChatInputFocused = false;
+    chatInput.onfocus = () => { isChatInputFocused = true };
+    chatInput.onblur = () => { isChatInputFocused = false };
 
     chatInput.onkeydown = (e) => {
         if (e.key === "Enter") {
@@ -164,10 +160,52 @@ async function main() {
                     content: chatInput.value
                 });
                 chatInput.value = "";
+                chatInput.blur();
             }
         }
     }
+
+    window.addEventListener("keypress", (e) => {
+        const key = e.key.toLowerCase();
+        if (
+            !window.isShowingAlert &&
+            !isChatInputFocused &&
+            !e.ctrlKey &&
+            "abcdefghijklmnopqrstuvwxyz0123456789".includes(key)
+        ) {
+            chatInput.focus();
+        }
+    })
+
+    chatAttachBtn.onclick = function () {
+        alert("Attach file feature unimplemented. Coming soon.");
+    };
 }
+
+window.selectLeftbarBtn = (btn) => {
+    for(const item of Array.from(document.querySelectorAll(".leftbar-btn-selected"))){
+        item.classList.remove("leftbar-btn-selected");
+    }
+    btn.classList.add("leftbar-btn-selected");
+}
+
+window.showTab = function (tabName, successCallback) {
+    let reqTab;
+    const tabs = Array.from(document.querySelectorAll(".tabs"));
+    for (const tab of tabs) {
+        if (tab && tab.getAttribute("tab-id") == tabName) {
+            reqTab = tab;
+            break;
+        }
+    }
+    if (reqTab) {
+        tabs.map(e => e.style.display = "none");
+        reqTab.style.display = "flex";
+        successCallback();
+    } else {
+        alert("Tab id (" + tabName + ") >> Unimplemented.");
+    }
+};
 
 function clearChatList() {
     chatContainer.innerHTML = "";
@@ -218,7 +256,7 @@ function addNewOnlinePerson(username, profileimurl) {
 
 function removeOnlinePerson(username) {
     try {
-        document.querySelector("[data-connected-user-username="+username+"]").remove();
+        document.querySelector("[data-connected-user-username=" + username + "]").remove();
         connectedPeopleValue.innerHTML = parseInt(connectedPeopleValue.innerHTML) - 1;
     } catch (error) {
         console.log("remove_online_person_error:", error);

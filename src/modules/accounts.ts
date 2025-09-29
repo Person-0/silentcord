@@ -48,6 +48,10 @@ class AccountManager {
         return this.accounts_file.get(username);
     }
 
+    exists = (username: string) => {
+        return username in this.accounts_file.stored_data;
+    }
+
     async validatePassword(username: string, validatePass: string) {
         const encodedPass = this.credentials_file.get(username);
         if (
@@ -94,6 +98,14 @@ class AccessTokensManager {
             return "expired";
         }
         return record ? (record.accessToken === toCheckToken ? "valid" : "invalid") : "invalid";
+    }
+
+    deleteAccessToken(username: string) {
+        if(this.store.get(username)) {
+            this.store.remove(username);
+            return true;
+        }
+        return false;
     }
 
     constructor(filepath: string, tokenExpiryInterval: number) {
