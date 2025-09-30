@@ -31,6 +31,12 @@ user5: user
 ## Developing
 - Install all dependencies
     - ```npm i```
+- Create the `.env` file at the root of the project
+    - Sample .env file:
+```
+SECRET_ENCRPYTION_KEY = "6"
+IS_DEMO_WEB = "0"
+```
 - Start Application server
     - ```npm start``` > This command cleans the access tokens & previously build code, runs the typescript build command & hosts the server.
     - Specific commmands:
