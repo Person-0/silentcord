@@ -5,7 +5,7 @@ Uses bcrypt to securely store user passwords.<br><br>
 [*View Credits*](./static/credits.md)
 
 # Demo Mode
-App demo on render has signups closed.
+The [app demo](https://silentcord.onrender.com/) has signups closed.
 The following accounts can be used instead: <br>
 ```
 USERNAME: PASSWORD
