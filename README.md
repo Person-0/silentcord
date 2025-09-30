@@ -6,11 +6,7 @@ Uses bcrypt to securely store user passwords.<br><br>
 
 ## Preview
 
-> ![login](./img/initial/login_page.png)
-
-> ![landing](./img/initial/landing-page.png)
-
-> ![room](./img/initial/room.png)
+> ![preview](./img/intialv2/merged.png)
 
 ## TODO
 - ~~Basic text chat~~
