@@ -4,3 +4,4 @@ dist
 storage/*
 devlogs
 package-lock.json
+demo_files/accesstokens.json
