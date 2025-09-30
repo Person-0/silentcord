@@ -5,6 +5,11 @@ import { config } from "dotenv";
 // load .env into SECRETS object and not process.env
 const SECRETS: Record<string, string> = {};
 config({ debug: false, processEnv: SECRETS });
+let isDemoMode = false;
+if(SECRETS.IS_DEMO_WEB === "1"){
+    console.log(">> DEMO MODE IS ENABLED. Disabling store and redirecting to demo_files");
+    isDemoMode = true;
+}
 
 export class FileStoreManager {
     path: string;
@@ -12,16 +17,19 @@ export class FileStoreManager {
 
     constructor(dirpath: string) {
         const storagePath = path.join(__dirname, "../../storage/staticfiles", dirpath);
+        this.path = storagePath;
+        this.stored_files = [];
+
+        if(isDemoMode) return;
+
         if (fs.existsSync(storagePath)) {
             fs.rmdirSync(storagePath, { recursive: true });
         }
         fs.mkdirSync(storagePath, { recursive: true });
-        
-        this.path = storagePath;
-        this.stored_files = [];
     }
 
     save(filename: string, filedata: Buffer) {
+        if(isDemoMode) return;
         try {
             fs.writeFileSync(path.join(this.path, filename), filedata);
         } catch (error) {
@@ -30,10 +38,12 @@ export class FileStoreManager {
     }
 
     exists(filename: string) {
+        if(isDemoMode) return;
         return fs.existsSync(path.join(this.path, filename));
     }
 
     delete(filename: string) {
+        if(isDemoMode) return;
         try {
             fs.rmSync(path.join(this.path, filename));
         } catch (error) {
@@ -42,6 +52,7 @@ export class FileStoreManager {
     }
 
     clear() {
+        if(isDemoMode) return;
         try {
             fs.rmdirSync(this.path, { recursive: true });
         } catch (error) {
@@ -55,7 +66,7 @@ export class JSONStoreManager {
     stored_data: Record<string, any>;
 
     constructor(filename: string) {
-        const storagePath = path.join(__dirname, "../../" + SECRETS.IS_DEMO_WEB === "1" ? "demo_files" : "storage");
+        const storagePath = path.join(__dirname, "../../" + (isDemoMode ? "demo_files" : "storage"));
         if (!(fs.existsSync(storagePath))) {
             fs.mkdirSync(storagePath, { recursive: true });
         }
