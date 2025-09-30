@@ -10,11 +10,13 @@ import * as bodyParser from "body-parser";
 // User-Defined Modules
 import "./loggerpatch";
 import * as EVENTS from "../static/js/configs/events.json";
+import * as MessageConfig from "../static/js/configs/messageConfig.json";
 import CONFIG from "./config";
 import ratelimiter from "./modules/ratelimiter";
 import { AccessTokensManager, AccountManager, AccountInstance } from "./modules/accounts";
-import { MessageDatabaseManager } from "./modules/messages";
+import { RoomsManager } from "./modules/room";
 import { WebSocketConnectedClient, Room } from "./modules/room";
+import { Attachment } from "./modules/messages";
 
 // ==================================================================
 // Init
@@ -23,7 +25,7 @@ import { WebSocketConnectedClient, Room } from "./modules/room";
 // Data store: access tokens, accounts
 const ACCOUNTS = new AccountManager();
 const ACCOUNT_TOKENS = new AccessTokensManager(CONFIG.storedFiles.accessTokens, CONFIG.access_token_expire_interval);
-const msgDatabase = new MessageDatabaseManager();
+const Rooms = new RoomsManager();
 
 // simple cookie reader
 function readCookies(cookiesStr: string): Record<string, string> {
@@ -248,9 +250,12 @@ function main() {
         if (typeof accessToken === "string") {
             const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(creator, accessToken);
             if (tokenValidity === "valid") {
-                const roomID = msgDatabase.createRoom(
+                const roomID = Rooms.createRoom(
                     password.length > CONFIG.min_room_password_length ? password : false,
-                    creator
+                    creator,
+                    (endpoint, dirpath) => {
+                        app.use(endpoint, express.static(dirpath));
+                    }
                 );
                 express_reply(res, {
                     id: roomID,
@@ -285,10 +290,10 @@ function main() {
             if (typeof accessToken === "string") {
                 const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
                 if (tokenValidity === "valid") {
-                    const room = msgDatabase.getRoom(roomID);
+                    const room = Rooms.getRoom(roomID);
                     if (room) {
                         if (room.creator === username || ACCOUNTS.get(username)?.isAdmin) {
-                            const done = msgDatabase.destroyRoom(roomID);
+                            const done = Rooms.destroyRoom(roomID);
                             if (!done) {
                                 errorMessage = "Room 404";
                             }
@@ -383,7 +388,12 @@ function main() {
         ws.on("message", (rawdata) => {
             let pkt: [string, Record<string, any>];
             try {
-                pkt = JSON.parse(rawdata.toString());
+                const rawpktdata = rawdata.toString();
+                const rawpktsize = new TextEncoder()
+                    .encode(rawpktdata)
+                    .byteLength;
+                if(rawpktsize > MessageConfig.maxMessagePacketByteLength) throw "message packet length exceeded";
+                pkt = JSON.parse(rawpktdata);
                 if (!(Array.isArray(pkt) && pkt.length > 0)) throw "invalid data format";
             } catch (error) {
                 closeReason = "malformed data provided";
@@ -403,6 +413,7 @@ function main() {
                 hasPinged = true;
             } else {
                 if (isLoggedIn) {
+                    // only logged in
                     switch (label) {
 
                         case EVENTS.ROOM:
@@ -415,7 +426,7 @@ function main() {
                                     inRoom = false;
                                     room = {} as Room;
                                 }
-                                const roomInstance = msgDatabase.getRoom(data.rid);
+                                const roomInstance = Rooms.getRoom(data.rid);
                                 if (roomInstance) {
                                     const addToRoom = () => {
                                         roomInstance.addClient(username, ws, ACCOUNTS);
@@ -452,30 +463,99 @@ function main() {
                     }
 
                     if (inRoom) {
+                        // logged in and in room
                         switch (label) {
 
                             case EVENTS.MESSAGE_NEW:
+                                let {attachments, content} = data;
+                                const parsedAttachments: Attachment[] = [];
+                                let done = false;
+
                                 if (
-                                    typeof data.content === "string" &&
-                                    data.content.length > 0
+                                    !(
+                                        content &&
+                                        content.length > 0 &&
+                                        content.length <= MessageConfig.textLimit
+                                    )
                                 ) {
-                                    room.messages.add(username, data.content);
-                                } else {
                                     send(EVENTS.SHOW_ALERT, {
                                         message: "invalid message sent"
                                     });
+                                    done = true;
+                                }
+
+                                if(
+                                    attachments &&
+                                    Array.isArray(attachments) &&
+                                    attachments.length <= MessageConfig.attachmentsLimit
+                                ) {
+                                    let failedChecks = false;
+                                    let failedAttachments: string[] = [];
+
+                                    const validateAttachmentFilename = (filename: string) => {
+                                        let final = "";
+                                        const allowed = /[a-z|A-Z|0-9|_|-|.]+$/;
+                                        for(const char of filename) {
+                                            if(allowed.test(char)){
+                                                final += char;
+                                            }
+                                        }
+                                        return final;
+                                    }
+
+                                    for(let i = 0; i < attachments.length; i++) {
+                                        const item = attachments[i];
+                                        item.filename = typeof item.filename === "string" ? item.filename : "";
+                                        item.filename = validateAttachmentFilename(item.filename);
+                                        if(
+                                            Object.keys(item).length === 2 &&
+                                            item.filename.length <= MessageConfig.attachmentFilenameLimit &&
+                                            item.filename.length > 1 &&
+                                            typeof item.data === "string" &&
+                                            item.data.length <= MessageConfig.maxfileByteLength
+                                        ){
+                                            try {
+                                                item.data = Buffer.from(item.data, "base64");
+                                                parsedAttachments.push(item);
+                                            } catch(e) {
+                                                item.data = null;
+                                                attachments[i] = null;
+                                                failedAttachments.push(item.filename);
+                                            }
+                                        } else {
+                                            attachments = null;
+                                            failedChecks = true;
+                                            break;
+                                        }
+                                    }
+                                    if(failedChecks){
+                                        send(EVENTS.SHOW_ALERT, {
+                                            message: "invalid attachment(s)"
+                                        });
+                                        done = true;
+                                    }
+                                    if(failedAttachments.length > 0) {
+                                        send(EVENTS.SHOW_ALERT, {
+                                            message: "The following attachments could not be sent:" + failedAttachments.join(", ")
+                                        });
+                                    }
+                                }
+
+                                if(!done){
+                                    room.addMessage(username, content, parsedAttachments);
                                 }
                                 break;
 
-
                         }
                     } else {
+                        // logged in but not in room
                         switch (label) {
                             default:
                                 break;
                         }
                     }
                 } else {
+                    // not logged in
                     switch (label) {
 
                         case EVENTS.LOGIN:

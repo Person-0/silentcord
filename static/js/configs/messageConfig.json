@@ -1,0 +1,7 @@
+{
+    "textLimit": 3500,
+    "attachmentFilenameLimit": 50,
+    "attachmentsLimit": 5,
+    "maxfileByteLength": 27892122,
+    "maxMessagePacketByteLength": 139500000
+}

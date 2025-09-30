@@ -51,7 +51,8 @@ let lastUserMessage = { author: null, epochTime: 0 };
 })();
 
 async function main() {
-    const EVENTS = await (fetch((new URL("js/configs/events.json", location.origin)).toString()).then(res => res.json()));
+    const EVENTS = await fetchConfig("events.json");
+    const MSGCONFIG = await fetchConfig("messageConfig.json");
 
     const ws = new WebSocket(socketURL);
     ws.isOpen = false;
@@ -100,6 +101,7 @@ async function main() {
                 break;
 
             case EVENTS.MESSAGE_NEW:
+                console.log(data);
                 addNewMessage(data.author, data.timestamp, "./assets/img/hand_drawn_account.png", data.content);
                 break;
 
@@ -261,4 +263,10 @@ function removeOnlinePerson(username) {
     } catch (error) {
         console.log("remove_online_person_error:", error);
     }
+}
+
+function fetchConfig(filename) {
+    return (fetch(
+        (new URL("js/configs/" + filename, location.origin)
+    ).toString()).then(res => res.json()));
 }

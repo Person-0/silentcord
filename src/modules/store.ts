@@ -1,9 +1,52 @@
 import * as fs from "fs";
 import * as path from "path";
 
-export class StoreManager {
+export class FileStoreManager {
     path: string;
-    encountered_error: boolean;
+    stored_files: [];
+
+    constructor(dirpath: string) {
+        const storagePath = path.join(__dirname, "../../storage/staticfiles", dirpath);
+        if (fs.existsSync(storagePath)) {
+            fs.rmdirSync(storagePath, { recursive: true });
+        }
+        fs.mkdirSync(storagePath, { recursive: true });
+        
+        this.path = storagePath;
+        this.stored_files = [];
+    }
+
+    save(filename: string, filedata: Buffer) {
+        try {
+            fs.writeFileSync(path.join(this.path, filename), filedata);
+        } catch (error) {
+            console.log("STORE >> FILE SAVE() ERROR:", error);
+        }
+    }
+
+    exists(filename: string) {
+        return fs.existsSync(path.join(this.path, filename));
+    }
+
+    delete(filename: string) {
+        try {
+            fs.rmSync(path.join(this.path, filename));
+        } catch (error) {
+            console.log("STORE >> FILE DELETE() ERROR:", error);
+        }
+    }
+
+    clear() {
+        try {
+            fs.rmdirSync(this.path, { recursive: true });
+        } catch (error) {
+            console.log("STORE >> CLEAR() ERROR:", error);
+        }
+    }
+}
+
+export class JSONStoreManager {
+    path: string;
     stored_data: Record<string, any>;
 
     constructor(filename: string) {
@@ -14,7 +57,6 @@ export class StoreManager {
 
         this.path = path.join(storagePath, filename);
         this.stored_data = {};
-        this.encountered_error = false;
 
         if(!(fs.existsSync(this.path))){
             this.save();
@@ -44,8 +86,8 @@ export class StoreManager {
         try {
             this.stored_data = JSON.parse(data);
         } catch (error) {
-            this.encountered_error = true;
             this.stored_data = {};
+            console.log("STORE >> JSON READ() ERROR:", error);
         }
     }
 
@@ -53,7 +95,7 @@ export class StoreManager {
         try {
             fs.writeFileSync(this.path, JSON.stringify(this.stored_data));
         } catch (error) {
-            this.encountered_error = true;
+            console.log("STORE >> JSON SAVE() ERROR:", error);
         }
     }
 }

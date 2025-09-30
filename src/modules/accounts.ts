@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { config } from "dotenv";
 
-import { StoreManager } from "./store";
+import { JSONStoreManager } from "./store";
 import * as bcrypt from "bcrypt";
 import CONFIG from "../config";
 
@@ -17,12 +17,12 @@ interface AccountInstance {
 }
 
 class AccountManager {
-    accounts_file: StoreManager;
-    credentials_file: StoreManager;
+    accounts_file: JSONStoreManager;
+    credentials_file: JSONStoreManager;
 
     constructor() {
-        this.accounts_file = new StoreManager(CONFIG.storedFiles.accounts);
-        this.credentials_file = new StoreManager(CONFIG.storedFiles.credentials);
+        this.accounts_file = new JSONStoreManager(CONFIG.storedFiles.accounts);
+        this.credentials_file = new JSONStoreManager(CONFIG.storedFiles.credentials);
     }
 
     set = async (username: string, password: string) => {
@@ -82,7 +82,7 @@ class accessTokenRecord {
 }
 
 class AccessTokensManager {
-    store: StoreManager;
+    store: JSONStoreManager;
     tokenExpiryInterval: number;
 
     createAccessToken(username: string) {
@@ -110,7 +110,7 @@ class AccessTokensManager {
 
     constructor(filepath: string, tokenExpiryInterval: number) {
         this.tokenExpiryInterval = tokenExpiryInterval;
-        this.store = new StoreManager(filepath);
+        this.store = new JSONStoreManager(filepath);
     }
 }
 
