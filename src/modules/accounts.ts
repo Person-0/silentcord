@@ -10,6 +10,12 @@ const SECRETS: Record<string, string> = {};
 config({ debug: false, processEnv: SECRETS });
 const bcrypt_saltRounds = parseInt(SECRETS.SECRET_ENCRPYTION_KEY);
 
+let isDemoMode = false;
+if(SECRETS.IS_DEMO_WEB === "1"){
+    console.log(">> DEMO MODE IS ENABLED. Disabling signups");
+    isDemoMode = true;
+}
+
 interface AccountInstance {
     name: string,
     pass: string,
@@ -40,7 +46,7 @@ class AccountManager {
                 isAdmin: false
             });
             return true;
-        } 
+        }
         return false;
     }
 

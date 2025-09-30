@@ -1,5 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
+import { config } from "dotenv";
+
+// load .env into SECRETS object and not process.env
+const SECRETS: Record<string, string> = {};
+config({ debug: false, processEnv: SECRETS });
 
 export class FileStoreManager {
     path: string;
@@ -50,7 +55,7 @@ export class JSONStoreManager {
     stored_data: Record<string, any>;
 
     constructor(filename: string) {
-        const storagePath = path.join(__dirname, "../../storage");
+        const storagePath = path.join(__dirname, "../../" + SECRETS.IS_DEMO_WEB === "1" ? "demo_files" : "storage");
         if (!(fs.existsSync(storagePath))) {
             fs.mkdirSync(storagePath, { recursive: true });
         }

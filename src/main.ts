@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import * as express from "express";
 import * as bodyParser from "body-parser";
+import { config } from "dotenv";
 
 // ==================================================================
 // User-Defined Modules
@@ -21,6 +22,15 @@ import { Attachment } from "./modules/messages";
 // ==================================================================
 // Init
 // ==================================================================
+
+// load .env into SECRETS object and not process.env
+const SECRETS: Record<string, string> = {};
+config({ debug: false, processEnv: SECRETS });
+let isDemoMode = false;
+if(SECRETS.IS_DEMO_WEB === "1"){
+    console.log(">> DEMO MODE IS ENABLED. Disabling signups");
+    isDemoMode = true;
+}
 
 // Data store: access tokens, accounts
 const ACCOUNTS = new AccountManager();
@@ -74,7 +84,7 @@ function main() {
         try {
             const message: Record<string, string> = JSON.parse(req.body);
 
-            if (!CONFIG.accepting_new_registrations) {
+            if (isDemoMode || !CONFIG.accepting_new_registrations) {
                 errorMessage = "Signups are closed. Please try again later.";
                 throw req.ip + " >> tried to register with username [" + (typeof message.username === "string" ? message.username : "<invalid username>") + "] but failed.";
             }
