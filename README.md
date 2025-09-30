@@ -4,6 +4,16 @@ Built with NodeJS, TypeScript (ExpressJS, WebSockets) & Vanilla HTML / CSS.<br>
 Uses bcrypt to securely store user passwords.<br><br>
 [*View Credits*](./static/credits.md)
 
+# Demo Mode
+App demo on render has signups closed.
+The following accounts can be used instead:
+admin: admin
+user1: user
+user2: user
+user3: user
+user4: user
+user5: user
+
 ## Preview
 
 > ![preview](./img/intialv2/merged.png)
