@@ -37,10 +37,7 @@ createRoomBtn.onclick = async () => {
 
 window.show_landing_page = async function show_landing_page(username) {
     const roomID = (new URLSearchParams(location.search)).get("rid");
-    if (roomID) {
-        location.href = "./room.html?rid=" + roomID;
-    }
-
+    
     const params = new URLSearchParams();
     params.append("username", username);
     const res = await fetch(location.origin + "/api/account?" + params.toString()).then(res => res.json()).catch(err => console.log(err));
@@ -59,6 +56,10 @@ window.show_landing_page = async function show_landing_page(username) {
         document.getElementById("landing-page").style.display = "block";
         document.getElementById("acc-toggle-btn").innerHTML = "Logout";
         document.getElementById("acc-toggle-btn").onclick = logoutAccount;
+
+        if (roomID) {
+            location.href = "./room.html?rid=" + roomID;
+        }
     } else {
         await alert((res ? (res.message || false) : false) || "Error while fetching account details");
         logoutAccount();
