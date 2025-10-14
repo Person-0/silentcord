@@ -40,7 +40,7 @@ SECRET_ENCRPYTION_KEY = "6"
 IS_DEMO_WEB = "0"
 ```
 - Start Application server
-    - ```npm start``` > This command cleans the access tokens & previously build code, runs the typescript build command & hosts the server.
+    - ```npm start``` > This command cleans the access tokens & previously built code, runs the typescript build command & hosts the server.
     - Specific commmands:
-        - ```npm run clean``` > Clean the access tokens, previously build code in /dist and other temp files if any.
+        - ```npm run clean``` > Clean the access tokens, previously built code in /dist and other temp files if any.
         - ```npm run build``` > Runs the typescript build command
