@@ -3,6 +3,7 @@
     <img style="height: 50px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Typescript_logo_2020.svg/2048px-Typescript_logo_2020.svg.png">
     <img style="height: 50px" src="https://avatars.githubusercontent.com/u/9950313?s=48&v=4">
     <img style="height: 50px" src="https://avatars.githubusercontent.com/u/5658226?s=200&v=4">
+    <img style="height: 50px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/JavaScript-logo.png/500px-JavaScript-logo.png">
     <img style="height: 50px" src="https://www.w3.org/html/logo/downloads/HTML5_Logo_512.png">
     <img style="height: 50px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/CSS3_logo_and_wordmark.svg/1452px-CSS3_logo_and_wordmark.svg.png">
 </div>
