@@ -76,7 +76,7 @@ USERNAME  |  PASSWORD |
     ```bash
     npm start
     ```
-    > This command cleans the access tokens & previously build code, runs the typescript build command & hosts the server.
+    > This command cleans the access tokens & previously built code, runs the typescript build command & hosts the server.
 
 <br>   
 
@@ -84,7 +84,7 @@ USERNAME  |  PASSWORD |
     - ```bash
         npm run clean
         ```
-        > Clean the access tokens, previously build code in /dist and other temp files if any.
+        > Clean the access tokens, previously built code in /dist and other temp files if any.
 
     <br>    
 
