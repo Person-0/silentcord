@@ -158,7 +158,7 @@ Following methods exist for interacting with the backend API:
     ```
 
 - #### Response
-    On success, sets cookie "accessToken".
+    On success, sets cookie "accessToken".<br>
     JSON response:
     ```json
     {
@@ -180,7 +180,7 @@ Following methods exist for interacting with the backend API:
     ```
 
 - #### Response
-    On success, sets cookie "accessToken".
+    On success, sets cookie "accessToken".<br>
     JSON response:
     ```json
     {
@@ -259,7 +259,7 @@ Following methods exist for interacting with the backend API:
   - `username`: `string` (creator username)
   - `rid`: `string` (room id)
 
-  e.g. `/api/account?username=user1`
+  e.g. `/api/destroy_room?username=user1`
 
   > *Requires "accessToken" cookie for auth*<br>
   > Only the room creator or an admin account can destroy the room.
