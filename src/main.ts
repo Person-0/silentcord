@@ -421,180 +421,180 @@ function main() {
 
             if (label === EVENTS.PING) {
                 hasPinged = true;
-            } else {
-                if (isLoggedIn) {
-                    // only logged in
-                    switch (label) {
+                return;
+            }
+            if (isLoggedIn) {
+                // only logged in
+                switch (label) {
 
-                        case EVENTS.ROOM:
-                            if (
-                                typeof data.rid === "string" &&
-                                data.rid.length > 0
-                            ) {
-                                if (inRoom) {
-                                    room.removeClient(username);
-                                    inRoom = false;
-                                    room = {} as Room;
+                    case EVENTS.ROOM:
+                        if (
+                            typeof data.rid === "string" &&
+                            data.rid.length > 0
+                        ) {
+                            if (inRoom) {
+                                room.removeClient(username);
+                                inRoom = false;
+                                room = {} as Room;
+                            }
+                            const roomInstance = Rooms.getRoom(data.rid);
+                            if (roomInstance) {
+                                const addToRoom = () => {
+                                    roomInstance.addClient(username, ws, ACCOUNTS);
+                                    send(roomInstance.lastUpdate.label, roomInstance.lastUpdate);
+                                    inRoom = true;
+                                    room = roomInstance;
                                 }
-                                const roomInstance = Rooms.getRoom(data.rid);
-                                if (roomInstance) {
-                                    const addToRoom = () => {
-                                        roomInstance.addClient(username, ws, ACCOUNTS);
-                                        send(roomInstance.lastUpdate.label, roomInstance.lastUpdate);
-                                        inRoom = true;
-                                        room = roomInstance;
-                                    }
-                                    if (typeof roomInstance.password === "string") {
-                                        if (
-                                            (
-                                                typeof data.password === "string" &&
-                                                roomInstance.password === data.password
-                                            ) ||
-                                            username === roomInstance.creator
-                                        ) {
-                                            addToRoom();
-                                        } else {
-                                            closeReason = "Invalid Room Password";
-                                            forceClosed = true;
-                                        }
-                                    } else {
+                                if (typeof roomInstance.password === "string") {
+                                    if (
+                                        (
+                                            typeof data.password === "string" &&
+                                            roomInstance.password === data.password
+                                        ) ||
+                                        username === roomInstance.creator
+                                    ) {
                                         addToRoom();
+                                    } else {
+                                        closeReason = "Invalid Room Password";
+                                        forceClosed = true;
                                     }
                                 } else {
-                                    closeReason = "Room 404";
-                                    forceClosed = true;
+                                    addToRoom();
                                 }
                             } else {
-                                closeReason = "invalid room id provided";
+                                closeReason = "Room 404";
                                 forceClosed = true;
                             }
-                            break;
+                        } else {
+                            closeReason = "invalid room id provided";
+                            forceClosed = true;
+                        }
+                        break;
 
-                    }
+                }
 
-                    if (inRoom) {
-                        // logged in and in room
-                        switch (label) {
+                if (inRoom) {
+                    // logged in and in room
+                    switch (label) {
 
-                            case EVENTS.MESSAGE_NEW:
-                                let {attachments, content} = data;
-                                const parsedAttachments: Attachment[] = [];
-                                let done = false;
+                        case EVENTS.MESSAGE_NEW:
+                            let {attachments, content} = data;
+                            const parsedAttachments: Attachment[] = [];
+                            let done = false;
 
-                                if (
-                                    !(
-                                        content &&
-                                        content.length > 0 &&
-                                        content.length <= MessageConfig.textLimit
-                                    )
-                                ) {
+                            if (
+                                !(
+                                    content &&
+                                    content.length > 0 &&
+                                    content.length <= MessageConfig.textLimit
+                                )
+                            ) {
+                                send(EVENTS.SHOW_ALERT, {
+                                    message: "invalid message sent"
+                                });
+                                done = true;
+                            }
+
+                            if(
+                                attachments &&
+                                Array.isArray(attachments) &&
+                                attachments.length <= MessageConfig.attachmentsLimit
+                            ) {
+                                let failedChecks = false;
+                                let failedAttachments: string[] = [];
+
+                                const validateAttachmentFilename = (filename: string) => {
+                                    let final = "";
+                                    const allowed = /[a-z|A-Z|0-9|_|-|.]+$/;
+                                    for(const char of filename) {
+                                        if(allowed.test(char)){
+                                            final += char;
+                                        }
+                                    }
+                                    return final;
+                                }
+
+                                for(let i = 0; i < attachments.length; i++) {
+                                    const item = attachments[i];
+                                    item.filename = typeof item.filename === "string" ? item.filename : "";
+                                    item.filename = validateAttachmentFilename(item.filename);
+                                    if(
+                                        Object.keys(item).length === 2 &&
+                                        item.filename.length <= MessageConfig.attachmentFilenameLimit &&
+                                        item.filename.length > 1 &&
+                                        typeof item.data === "string" &&
+                                        item.data.length <= MessageConfig.maxfileByteLength
+                                    ){
+                                        try {
+                                            item.data = Buffer.from(item.data, "base64");
+                                            parsedAttachments.push(item);
+                                        } catch(e) {
+                                            item.data = null;
+                                            attachments[i] = null;
+                                            failedAttachments.push(item.filename);
+                                        }
+                                    } else {
+                                        attachments = null;
+                                        failedChecks = true;
+                                        break;
+                                    }
+                                }
+                                if(failedChecks){
                                     send(EVENTS.SHOW_ALERT, {
-                                        message: "invalid message sent"
+                                        message: "invalid attachment(s)"
                                     });
                                     done = true;
                                 }
-
-                                if(
-                                    attachments &&
-                                    Array.isArray(attachments) &&
-                                    attachments.length <= MessageConfig.attachmentsLimit
-                                ) {
-                                    let failedChecks = false;
-                                    let failedAttachments: string[] = [];
-
-                                    const validateAttachmentFilename = (filename: string) => {
-                                        let final = "";
-                                        const allowed = /[a-z|A-Z|0-9|_|-|.]+$/;
-                                        for(const char of filename) {
-                                            if(allowed.test(char)){
-                                                final += char;
-                                            }
-                                        }
-                                        return final;
-                                    }
-
-                                    for(let i = 0; i < attachments.length; i++) {
-                                        const item = attachments[i];
-                                        item.filename = typeof item.filename === "string" ? item.filename : "";
-                                        item.filename = validateAttachmentFilename(item.filename);
-                                        if(
-                                            Object.keys(item).length === 2 &&
-                                            item.filename.length <= MessageConfig.attachmentFilenameLimit &&
-                                            item.filename.length > 1 &&
-                                            typeof item.data === "string" &&
-                                            item.data.length <= MessageConfig.maxfileByteLength
-                                        ){
-                                            try {
-                                                item.data = Buffer.from(item.data, "base64");
-                                                parsedAttachments.push(item);
-                                            } catch(e) {
-                                                item.data = null;
-                                                attachments[i] = null;
-                                                failedAttachments.push(item.filename);
-                                            }
-                                        } else {
-                                            attachments = null;
-                                            failedChecks = true;
-                                            break;
-                                        }
-                                    }
-                                    if(failedChecks){
-                                        send(EVENTS.SHOW_ALERT, {
-                                            message: "invalid attachment(s)"
-                                        });
-                                        done = true;
-                                    }
-                                    if(failedAttachments.length > 0) {
-                                        send(EVENTS.SHOW_ALERT, {
-                                            message: "The following attachments could not be sent:" + failedAttachments.join(", ")
-                                        });
-                                    }
+                                if(failedAttachments.length > 0) {
+                                    send(EVENTS.SHOW_ALERT, {
+                                        message: "The following attachments could not be sent:" + failedAttachments.join(", ")
+                                    });
                                 }
+                            }
 
-                                if(!done){
-                                    room.addMessage(username, content, parsedAttachments);
-                                }
-                                break;
-
-                        }
-                    } else {
-                        // logged in but not in room
-                        switch (label) {
-                            default:
-                                break;
-                        }
-                    }
-                } else {
-                    // not logged in
-                    switch (label) {
-
-                        case EVENTS.LOGIN:
-                            if (
-                                typeof data.username === "string" &&
-                                data.username.length >= CONFIG.min_username_length &&
-                                data.username.length <= CONFIG.max_username_length &&
-                                ACCOUNTS.get(data.username) &&
-                                typeof cookies.accessToken === "string" &&
-                                cookies.accessToken.length > 0
-                            ) {
-                                const validity = ACCOUNT_TOKENS.validateAccessToken(data.username, cookies.accessToken);
-                                if (validity === "valid") {
-                                    clearTimeout(loginTimeout);
-                                    loggedInAccount = ACCOUNTS.get(data.username);
-                                    username = data.username;
-                                    isLoggedIn = true;
-                                    console.log("[LOG] " + username + " > logged in");
-                                } else {
-                                    closeReason = "accessToken Status: " + validity;
-                                    forceClosed = true;
-                                }
-                            } else {
-                                closeReason = "invalid username/accessToken provided";
-                                forceClosed = true;
+                            if(!done){
+                                room.addMessage(username, content, parsedAttachments);
                             }
                             break;
 
                     }
+                } else {
+                    // logged in but not in room
+                    switch (label) {
+                        default:
+                            break;
+                    }
+                }
+            } else {
+                // not logged in
+                switch (label) {
+
+                    case EVENTS.LOGIN:
+                        if (
+                            typeof data.username === "string" &&
+                            data.username.length >= CONFIG.min_username_length &&
+                            data.username.length <= CONFIG.max_username_length &&
+                            ACCOUNTS.get(data.username) &&
+                            typeof cookies.accessToken === "string" &&
+                            cookies.accessToken.length > 0
+                        ) {
+                            const validity = ACCOUNT_TOKENS.validateAccessToken(data.username, cookies.accessToken);
+                            if (validity === "valid") {
+                                clearTimeout(loginTimeout);
+                                loggedInAccount = ACCOUNTS.get(data.username);
+                                username = data.username;
+                                isLoggedIn = true;
+                                console.log("[LOG] " + username + " > logged in");
+                            } else {
+                                closeReason = "accessToken Status: " + validity;
+                                forceClosed = true;
+                            }
+                        } else {
+                            closeReason = "invalid username/accessToken provided";
+                            forceClosed = true;
+                        }
+                        break;
+
                 }
             }
 
