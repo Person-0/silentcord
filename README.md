@@ -69,8 +69,7 @@ USERNAME  |  PASSWORD |
         ```
         SECRET_ENCRPYTION_KEY = "7"
         IS_DEMO_WEB = "0"
-        ```
-<br>   
+        ``` 
 
 - Start Application server:
     ```bash
@@ -78,15 +77,11 @@ USERNAME  |  PASSWORD |
     ```
     > This command cleans the access tokens & previously built code, runs the typescript build command & hosts the server.
 
-<br>   
-
 - Specific commmands:
     - ```bash
         npm run clean
         ```
-        > Clean the access tokens, previously built code in /dist and other temp files if any.
-
-    <br>    
+        > Clean the access tokens, previously built code in /dist and other temp files if any.    
 
     - ```bash
         npm run build
