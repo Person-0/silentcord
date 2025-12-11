@@ -43,6 +43,9 @@ USERNAME  |  PASSWORD |
 
 # Contributing
 
+## Documentation
+### [View Server Docs](./DOCS.md)
+
 ## TODO
 - Ratelimits to prevent DDOS / DOS
 - Attachments
@@ -88,8 +91,6 @@ USERNAME  |  PASSWORD |
         npm run build
         ``` 
         > Runs the typescript build command
-
-### [View Server Docs](./DOCS.md)
 
 ## Project structure
 will be updated soon
