@@ -92,50 +92,7 @@ USERNAME  |  PASSWORD |
 ### [View Server Docs](./DOCS.md)
 
 ## Project structure
-```
-silentcord/
-├── .gitignore
-├── demo_files/...
-├── demo_imgs/...
-├── package.json
-├── README.md
-├── src/ (main backend code)
-│   ├── config.ts
-│   ├── loggerpatch.ts
-│   ├── main.ts
-│   └── modules/
-│       ├── accounts.ts
-│       ├── messages.ts
-│       ├── ratelimiter.ts
-│       ├── room.ts
-│       └── store.ts
-├── static/ (static frontent code)
-│   ├── assets/
-│   │   ├── alert.css
-│   │   ├── fonts/..
-│   │   ├── img/..
-│   │   ├── landing.css
-│   │   ├── login.css
-│   │   ├── room.css
-│   │   └── shared.css
-│   ├── credits.html
-│   ├── credits.md
-│   ├── index.html
-│   ├── js/
-│   │   ├── alert.js
-│   │   ├── configs/
-│   │   │   ├── events.json
-│   │   │   └── messageConfig.json
-│   │   ├── cssSwitcher.js
-│   │   ├── landingPage.js
-│   │   ├── libs/
-│   │   │   └── marked.umd.js
-│   │   ├── login.js
-│   │   └── room.js
-│   ├── login.html
-│   └── room.html
-└── tsconfig.json
-```
+will be updated soon
 
 # Credits
 [Click here to view Credits](./static/credits.md)
