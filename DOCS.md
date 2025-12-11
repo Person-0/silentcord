@@ -29,7 +29,7 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": true / false,
+        "error": boolean,
         "message": "description of error"
     }
     ```
@@ -51,7 +51,7 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": true / false,
+        "error": boolean,
         "message": "description of error"
     }
     ```
@@ -66,7 +66,7 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": true / false,
+        "error": boolean,
         "message": "description of error"
     }
     ```
@@ -87,12 +87,12 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": true / false,
+        "error": boolean,
         "message": "description of error",
         "username": "......",
         "ip": "......",
         "name": "......",
-        "isAdmin": true / false
+        "isAdmin": boolean
     }
     ```
 
@@ -112,7 +112,7 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": true / false,
+        "error": boolean,
         "message": "description of error",
         "id": "Room ID"
     }
@@ -135,7 +135,7 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": true / false,
+        "error": boolean,
         "message": "description of error"
     }
     ```
