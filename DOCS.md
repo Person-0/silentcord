@@ -19,8 +19,8 @@ Following methods exist for interacting with the backend API:
     Request body: JSON
     ```json
     {
-        "username": string,
-        "password": string
+        "username": "......",
+        "password": "......"
     }
     ```
 
@@ -29,8 +29,8 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
-        "message": string (if error)
+        "error": true / false,
+        "message": "description of error"
     }
     ```
 
@@ -41,8 +41,8 @@ Following methods exist for interacting with the backend API:
     Request body: JSON
     ```json
     {
-        "username": string,
-        "password": string
+        "username": "......",
+        "password": "......"
     }
     ```
 
@@ -51,8 +51,8 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
-        "message": string (if error)
+        "error": true / false,
+        "message": "description of error"
     }
     ```
 
@@ -66,8 +66,8 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
-        "message": string (if error)
+        "error": true / false,
+        "message": "description of error"
     }
     ```
 
@@ -87,12 +87,12 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
-        "message": string (if error),
-        "username": string,
-        "ip": string,
-        "name": string,
-        "isAdmin": boolean
+        "error": true / false,
+        "message": "description of error",
+        "username": "......",
+        "ip": "......",
+        "name": "......",
+        "isAdmin": true / false
     }
     ```
 
@@ -112,9 +112,9 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
-        "message": string (if error),
-        "id": string > Room ID
+        "error": true / false,
+        "message": "description of error",
+        "id": "Room ID"
     }
     ```
 
@@ -135,8 +135,8 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
-        "message": string (if error)
+        "error": true / false,
+        "message": "description of error"
     }
     ```
 
@@ -151,7 +151,7 @@ The chat room is connected through a WebSocket.<br>
 Messages sent/recieved are all stringified JSON array objects that follow the format:
 ```js
 [
-    label: string, // packet label
+    label: "string", // packet label
     data: {...}    // packet data
 ]
 ```
