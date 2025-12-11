@@ -151,8 +151,8 @@ The chat room is connected through a WebSocket.<br>
 Messages sent/recieved are all stringified JSON array objects that follow the format:
 ```js
 [
-    label: string, (packet label)
-    data: {...}    (packet data)
+    label: string, // packet label
+    data: {...}    // packet data
 ]
 ```
 
