@@ -1,11 +1,11 @@
-interface Attachment {
+export interface Attachment {
     filename: string, 
     data: Buffer
 }
 
-interface parsedMessageAttachments {[filename: string]: string}
+export interface parsedMessageAttachments {[filename: string]: string}
 
-class Message {
+export class Message {
     content: string;
     attachments: parsedMessageAttachments;
     timestamp: number;
@@ -21,7 +21,7 @@ class Message {
     }
 }
 
-class UpdateInstance {
+export class UpdateInstance {
     label: string;
     timestamp: number;
 
@@ -31,5 +31,3 @@ class UpdateInstance {
         Object.assign(this, data);
     }
 }
-
-export { Message, Attachment, parsedMessageAttachments, UpdateInstance}

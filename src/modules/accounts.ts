@@ -10,13 +10,13 @@ const SECRETS: Record<string, string> = {};
 config({ debug: false, processEnv: SECRETS });
 const bcrypt_saltRounds = parseInt(SECRETS.SECRET_ENCRPYTION_KEY);
 
-interface AccountInstance {
+export interface AccountInstance {
     name: string,
     pass: string,
     isAdmin: boolean
 }
 
-class AccountManager {
+export class AccountManager {
     accounts_file: JSONStoreManager;
     credentials_file: JSONStoreManager;
 
@@ -72,16 +72,18 @@ class AccountManager {
 }
 
 // Data Store: Temporary account access tokens
+const newAccessToken = () => randomUUID() + "-" + randomUUID();
 class accessTokenRecord {
     accessToken: string;
     createdAt: number;
     constructor() {
-        this.accessToken = randomUUID() + "-" + randomUUID();
+        this.accessToken = newAccessToken();
         this.createdAt = Date.now();
     }
 }
+export const accessTokenLength = newAccessToken().length;
 
-class AccessTokensManager {
+export class AccessTokensManager {
     store: JSONStoreManager;
     tokenExpiryInterval: number;
 
@@ -113,5 +115,3 @@ class AccessTokensManager {
         this.store = new JSONStoreManager(filepath);
     }
 }
-
-export { AccessTokensManager, AccountManager, AccountInstance };

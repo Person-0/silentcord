@@ -6,7 +6,7 @@ import { AccountInstance, AccountManager } from "./accounts";
 import { FileStoreManager } from "./store";
 import * as EVENTS from "../../static/js/configs/events.json";
 
-interface WebSocketConnectedClient extends WebSocket {
+export interface WebSocketConnectedClient extends WebSocket {
     sendJSON: (label: string, data: {}) => void
 }
 
@@ -20,7 +20,7 @@ class ConnectedClient {
     }
 }
 
-class AttachmentsManager {
+export class AttachmentsManager {
     filestore: FileStoreManager;
 
     clean() {
@@ -47,7 +47,7 @@ class AttachmentsManager {
     }
 }
 
-class Room {
+export class Room {
     id: string;
     password: boolean | string;
     lastUpdate: UpdateInstance;
@@ -145,18 +145,19 @@ class Room {
     }
 }
 
-class RoomsManager {
+export const roomIDlength = 5;
+export class RoomsManager {
     rooms: Record<string, Room> = {};
 
     createRoom = (password: boolean | string, creator: string, hostStatic: (endpoint: string, dirpath: string) => void) => {
-        // small random id generator (need short ids of length 5 for room ids)
-        const makeId = (length: number = 5) => {
+        // small random id generator (need short ids for room ids)
+        const makeId = (length: number) => {
             return new Array(length).fill(0).map(e => {
                 const allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRTSTUVWXYZ123456789";
                 return allowed[Math.floor(Math.random() * allowed.length)];
             }).join("");
         }
-        const id = makeId();
+        const id = makeId(roomIDlength);
         const attachments = new AttachmentsManager(id);
         hostStatic("/attachments/" + id, attachments.filestore.path);
         this.rooms[id] = new Room(id, password, creator, attachments);
@@ -179,5 +180,3 @@ class RoomsManager {
         return this.rooms[id];
     }
 }
-
-export { RoomsManager, Room, AttachmentsManager, WebSocketConnectedClient }
