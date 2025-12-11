@@ -3,7 +3,7 @@
 import * as path from "path";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
-import * as express from "express";
+import express from "express";
 import * as bodyParser from "body-parser";
 import { config } from "dotenv";
 
