@@ -9,7 +9,7 @@ import { config } from "dotenv";
 
 // ==================================================================
 // User-Defined Modules
-import "./loggerpatch";
+import "./misc/loggerpatch";
 import * as EVENTS from "../static/js/configs/events.json";
 import * as MessageConfig from "../static/js/configs/messageConfig.json";
 import CONFIG from "./config";
