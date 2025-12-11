@@ -19,6 +19,9 @@ import { RoomsManager } from "./modules/room";
 import { WebSocketConnectedClient, Room } from "./modules/room";
 import { Attachment } from "./modules/messages";
 
+// Validating Schemas
+import * as apiSchema from "./schemas/api";
+
 // ==================================================================
 // Init
 // ==================================================================
@@ -27,7 +30,7 @@ import { Attachment } from "./modules/messages";
 const SECRETS: Record<string, string> = {};
 config({ debug: false, processEnv: SECRETS });
 let isDemoMode = false;
-if(SECRETS.IS_DEMO_WEB === "1"){
+if (SECRETS.IS_DEMO_WEB === "1") {
     console.log(">> DEMO MODE IS ENABLED. Disabling signups");
     isDemoMode = true;
 }
@@ -76,261 +79,280 @@ function main() {
     // static files
     app.use(express.static(path.join(__dirname, "../static")));
 
+    function safeParseJSON(text: string) {
+        let ret: false | Record<string, any> = false;
+        try {
+            ret = JSON.parse(text);
+        } catch (error) { }
+        return ret;
+    }
+
     // login & signup
     app.post("/api/signup", async (req, res) => {
-        let error = false;
-        let errorMessage = "Unknown Error. Please contact the developer of this application.";
-        let response: string = "";
-        try {
-            const message: Record<string, string> = JSON.parse(req.body);
-
-            if (isDemoMode || !CONFIG.accepting_new_registrations) {
-                errorMessage = "Signups are closed. Please try again later.";
-                throw req.ip + " >> tried to register with username [" + (typeof message.username === "string" ? message.username : "<invalid username>") + "] but failed.";
-            }
-
-            if (
-                message.username &&
-                message.password &&
-                typeof message.password === "string" &&
-                typeof message.username === "string" &&
-                message.username.length >= CONFIG.min_username_length &&
-                message.username.length <= CONFIG.max_username_length &&
-                message.password.length >= CONFIG.min_password_length &&
-                message.password.length <= CONFIG.max_password_length
-            ) {
-                const account = ACCOUNTS.get(message.username);
-                if (!account) {
-                    const createAccResult = await ACCOUNTS.set(message.username, message.password);
-                    if (createAccResult) {
-                        response = ACCOUNT_TOKENS.createAccessToken(message.username);
-                    } else {
-                        error = true;
-                        errorMessage = "Unknown error while creating account. Please contact developer.";
-                    }
-                } else {
-                    error = true;
-                    errorMessage = "Account already exists";
-                }
-            } else {
-                error = true;
-                errorMessage = "Invalid Credentials Provided"
-            }
-        } catch (e) {
-            error = true;
-            console.log("POST_MESSAGE ERROR:", e);
+        const message = safeParseJSON(req.body);
+        if (!message) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid post body"
+            });
         }
 
-        if (error) {
-            express_reply(res, {
-                error,
-                message: errorMessage
-            })
-        } else {
-            res.cookie(
-                "accessToken",
-                response,
-                { maxAge: CONFIG.access_token_expire_interval }
-            ).send(JSON.stringify({ error }));
+        if (isDemoMode || !CONFIG.accepting_new_registrations) {
+            console.log(req.ip + " >> tried to register with username [" + (typeof message.username === "string" ? message.username : "<invalid username>") + "] but failed.");
+            return express_reply(res, {
+                error: true,
+                message: "Signups are closed. Please try again later."
+            });
         }
+
+        const validated = apiSchema.signupRequest.safeParse(message);
+        if (validated.error) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid credentials provided."
+            });
+        }
+
+        const { username, password } = validated.data;
+
+        const account = ACCOUNTS.get(username);
+        if (account) {
+            return express_reply(res, {
+                error: true,
+                message: "Account already exists"
+            });
+        }
+
+        const createAccResult = await ACCOUNTS.set(username, password);
+        if (!createAccResult) {
+            return express_reply(res, {
+                error: true,
+                message: "Unknown error while creating account, please contact developer"
+            });
+        }
+
+        const response = ACCOUNT_TOKENS.createAccessToken(username);
+        res.cookie(
+            "accessToken",
+            response,
+            { maxAge: CONFIG.access_token_expire_interval }
+        ).send(JSON.stringify({ error: false }));
     })
 
     app.post("/api/login", async (req, res) => {
-        let error = false;
-        let errorMessage = "Unknown Error. Please contact the developer of this application.";
-        let response: string = "";
-        try {
-            const message: Record<string, string> = JSON.parse(req.body);
-            if (
-                message.username &&
-                message.password &&
-                typeof message.password === "string" &&
-                typeof message.username === "string" &&
-                message.username.length >= CONFIG.min_username_length &&
-                message.username.length <= CONFIG.max_username_length &&
-                message.password.length >= CONFIG.min_password_length &&
-                message.password.length <= CONFIG.max_password_length
-            ) {
-                const accountInstance = ACCOUNTS.get(message.username);
-                if (accountInstance) {
-                    if (await ACCOUNTS.validatePassword(message.username, message.password)) {
-                        response = ACCOUNT_TOKENS.createAccessToken(message.username);
-                    } else {
-                        error = true;
-                        errorMessage = "Incorrect Password!";
-                    }
-                } else {
-                    error = true;
-                    errorMessage = "Account does not exist!";
-                }
-            } else {
-                error = true;
-                errorMessage = "Invalid Credentials Provided."
-            }
-        } catch (e) {
-            error = true;
-            console.log("POST_MESSAGE ERROR:", e);
+        const message = safeParseJSON(req.body);
+        if (!message) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid post body"
+            });
         }
 
-        if (error) {
-            express_reply(res, {
-                error,
-                message: errorMessage
-            })
-        } else {
-            res.cookie(
-                "accessToken",
-                response,
-                { maxAge: CONFIG.access_token_expire_interval }
-            ).send(JSON.stringify({ error }));
+        const validated = apiSchema.loginRequest.safeParse(message);
+        if (validated.error) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid credentials provided."
+            });
         }
+
+        const { username, password } = validated.data;
+
+        const account = ACCOUNTS.get(username);
+        if (!account) {
+            return express_reply(res, {
+                error: true,
+                message: "Account does not exist!"
+            });
+        }
+
+        if (!(await account.validatePassword(username, password))) {
+            return express_reply(res, {
+                error: true,
+                message: "Incorrect password!"
+            });
+        }
+
+        const token = ACCOUNT_TOKENS.createAccessToken(username);
+        res.cookie(
+            "accessToken",
+            token,
+            { maxAge: CONFIG.access_token_expire_interval }
+        ).send(JSON.stringify({ error: false }));
     })
 
     app.get("/api/logout", (req, res) => {
         const cookies = readCookies(req.headers.cookie || "");
-        const username = req.query["username"]?.toString() || "";
-        const accessToken = cookies.accessToken || false;
-        let errorMessage = "";
-        if (
-            typeof accessToken === "string" &&
-            typeof username === "string" &&
-            accessToken.length > 10 &&
-            username.length >= CONFIG.min_room_password_length &&
-            ACCOUNTS.exists(username)
-        ) {
-            const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
-            if (tokenValidity === "valid") {
-                errorMessage = ACCOUNT_TOKENS.deleteAccessToken(username) ? "Could not delete access token" : "";
-            } else {
-                errorMessage = "Token Status: " + tokenValidity;
-            }
-        } else {
-            errorMessage = "Invalid Access Token / Username";
+        const validated = apiSchema.logoutRequest.safeParse({ ...req.query, accessToken: cookies.accessToken });
+        if (validated.error) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid credentials provided."
+            });
+        }
+
+        const { username, accessToken } = validated.data;
+
+        if (!(ACCOUNTS.exists(username))) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid Access Token / Username"
+            });
+        }
+
+        const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
+        if (tokenValidity !== "valid") {
+            return express_reply(res, {
+                error: true,
+                message: "Token Status: " + tokenValidity
+            });
+        }
+
+        const result = ACCOUNT_TOKENS.deleteAccessToken(username);
+        if (!result) {
+            return express_reply(res, {
+                error: true,
+                message: "Could not delete access token"
+            });
         }
 
         express_reply(res, {
-            error: errorMessage.length > 0,
-            message: errorMessage
-        })
+            error: false
+        });
     })
 
     app.get("/api/account", (req, res) => {
         const cookies = readCookies(req.headers.cookie || "");
-        const username = req.query["username"]?.toString() || "";
-        const accessToken = cookies.accessToken || false;
-        let errorMessage = "";
-        if (
-            typeof accessToken === "string" &&
-            typeof username === "string" &&
-            accessToken.length > 10 &&
-            username.length >= CONFIG.min_room_password_length &&
-            ACCOUNTS.exists(username)
-        ) {
-            const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
-            if (tokenValidity === "valid") {
-                express_reply(res, {
-                    data: {
-                        ...ACCOUNTS.get(username),
-                        ip: req.ip,
-                        username
-                    },
-                    error: false
-                })
-            } else {
-                errorMessage = "Token Status: " + tokenValidity;
-            }
-        } else {
-            errorMessage = "Invalid Access Token / Username";
+        const validated = apiSchema.accountRequest.safeParse({ ...req.query, accessToken: cookies.accessToken });
+        if (validated.error) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid credentials provided."
+            });
         }
 
-        if (errorMessage.length > 0) {
-            express_reply(res, {
+        const { username, accessToken } = validated.data;
+
+        if (!(ACCOUNTS.exists(username))) {
+            return express_reply(res, {
                 error: true,
-                message: errorMessage
-            })
+                message: "Invalid Access Token / Username"
+            });
         }
+
+        const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
+        if (tokenValidity !== "valid") {
+            return express_reply(res, {
+                error: true,
+                message: "Token Status: " + tokenValidity
+            });
+        }
+
+        express_reply(res, {
+            error: false,
+            data: {
+                ...ACCOUNTS.get(username),
+                ip: req.ip,
+                username
+            }
+        });
     })
 
     app.get("/api/create_room", (req, res) => {
         const cookies = readCookies(req.headers.cookie || "");
-        const creator = req.query["username"]?.toString() || "";
-        const password = req.query["password"]?.toString() || "";
-        const accessToken = cookies.accessToken || false;
-        let errorMessage = "";
-        if (typeof accessToken === "string") {
-            const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(creator, accessToken);
-            if (tokenValidity === "valid") {
-                const roomID = Rooms.createRoom(
-                    password.length > CONFIG.min_room_password_length ? password : false,
-                    creator,
-                    (endpoint, dirpath) => {
-                        app.use(endpoint, express.static(dirpath));
-                    }
-                );
-                express_reply(res, {
-                    id: roomID,
-                    error: false
-                })
-            } else {
-                errorMessage = "Token Status: " + tokenValidity;
-            }
-        } else {
-            errorMessage = "Invalid Access Token";
+        const validated = apiSchema.createRoomRequest.safeParse({ ...req.query, accessToken: cookies.accessToken });
+        if (validated.error) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid credentials provided."
+            });
         }
 
-        if (errorMessage.length > 0) {
-            express_reply(res, {
+        const { username: creator, password, accessToken } = validated.data;
+
+        if (!(ACCOUNTS.exists(creator))) {
+            return express_reply(res, {
                 error: true,
-                message: errorMessage
-            })
+                message: "Invalid Username"
+            });
         }
+
+        const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(creator, accessToken);
+        if (tokenValidity !== "valid") {
+            return express_reply(res, {
+                error: true,
+                message: "Token Status: " + tokenValidity
+            });
+        }
+
+        const rid = Rooms.createRoom(
+            password.length > CONFIG.min_room_password_length ? password : false,
+            creator,
+            (endpoint, dirpath) => {
+                app.use(endpoint, express.static(dirpath));
+            }
+        );
+
+        express_reply(res, {
+            id: rid,
+            error: false
+        });
     })
 
     app.get("/api/destroy_room", (req, res) => {
         const cookies = readCookies(req.headers.cookie || "");
-        const accessToken = cookies.accessToken || false;
-        const username = req.query["username"]?.toString() || "";
-        const roomID = req.query["rid"]?.toString() || "";
-        let errorMessage = "";
-        if (
-            roomID &&
-            typeof roomID === "string" &&
-            roomID.length > 0
-        ) {
-            if (typeof accessToken === "string") {
-                const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
-                if (tokenValidity === "valid") {
-                    const room = Rooms.getRoom(roomID);
-                    if (room) {
-                        if (room.creator === username || ACCOUNTS.get(username)?.isAdmin) {
-                            const done = Rooms.destroyRoom(roomID);
-                            if (!done) {
-                                errorMessage = "Room 404";
-                            }
-                        } else {
-                            errorMessage = "Unauthorized";
-                        }
-                    } else {
-                        errorMessage = "Room 404";
-                    }
-                } else {
-                    errorMessage = "Token Status: " + tokenValidity;
-                }
-            } else {
-                errorMessage = "Invalid Access Token";
-            }
-        } else {
-            errorMessage = "Invalid Params Provided";
+        const validated = apiSchema.destroyRoomRequest.safeParse({ ...req.query, accessToken: cookies.accessToken });
+        if (validated.error) {
+            return express_reply(res, {
+                error: true,
+                message: "Invalid credentials provided."
+            });
         }
 
-        if (errorMessage.length > 0) {
-            express_reply(res, {
+        const { accessToken, username, rid } = validated.data;
+
+        if (!(ACCOUNTS.exists(username))) {
+            return express_reply(res, {
                 error: true,
-                message: errorMessage
-            })
-        } else {
-            express_reply(res, { error: false });
+                message: "Invalid Username"
+            });
         }
+        const requestSendorAccount = ACCOUNTS.get(username);
+
+        const tokenValidity = ACCOUNT_TOKENS.validateAccessToken(username, accessToken);
+        if (tokenValidity !== "valid") {
+            return express_reply(res, {
+                error: true,
+                message: "Token Status: " + tokenValidity
+            });
+        }
+
+        const room = Rooms.getRoom(rid);
+        if (!room) {
+            return express_reply(res, {
+                error: true,
+                message: "Room 404"
+            });
+        }
+
+        if (!(room.creator === username || requestSendorAccount.isAdmin)) {
+            return express_reply(res, {
+                error: true,
+                message: "Unauthorized"
+            });
+        }
+
+        const destroyed = Rooms.destroyRoom(rid);
+        if (!destroyed) {
+            return express_reply(res, {
+                error: true,
+                message: "Unknown Error. Could not destroy room"
+            });
+        }
+
+        return express_reply(res, {
+            error: false
+        });
     })
 
     // WebSocket connection handler
@@ -402,7 +424,7 @@ function main() {
                 const rawpktsize = new TextEncoder()
                     .encode(rawpktdata)
                     .byteLength;
-                if(rawpktsize > MessageConfig.maxMessagePacketByteLength) throw "message packet length exceeded";
+                if (rawpktsize > MessageConfig.maxMessagePacketByteLength) throw "message packet length exceeded";
                 pkt = JSON.parse(rawpktdata);
                 if (!(Array.isArray(pkt) && pkt.length > 0)) throw "invalid data format";
             } catch (error) {
@@ -478,7 +500,7 @@ function main() {
                     switch (label) {
 
                         case EVENTS.MESSAGE_NEW:
-                            let {attachments, content} = data;
+                            let { attachments, content } = data;
                             const parsedAttachments: Attachment[] = [];
                             let done = false;
 
@@ -495,7 +517,7 @@ function main() {
                                 done = true;
                             }
 
-                            if(
+                            if (
                                 attachments &&
                                 Array.isArray(attachments) &&
                                 attachments.length <= MessageConfig.attachmentsLimit
@@ -506,29 +528,29 @@ function main() {
                                 const validateAttachmentFilename = (filename: string) => {
                                     let final = "";
                                     const allowed = /[a-z|A-Z|0-9|_|-|.]+$/;
-                                    for(const char of filename) {
-                                        if(allowed.test(char)){
+                                    for (const char of filename) {
+                                        if (allowed.test(char)) {
                                             final += char;
                                         }
                                     }
                                     return final;
                                 }
 
-                                for(let i = 0; i < attachments.length; i++) {
+                                for (let i = 0; i < attachments.length; i++) {
                                     const item = attachments[i];
                                     item.filename = typeof item.filename === "string" ? item.filename : "";
                                     item.filename = validateAttachmentFilename(item.filename);
-                                    if(
+                                    if (
                                         Object.keys(item).length === 2 &&
                                         item.filename.length <= MessageConfig.attachmentFilenameLimit &&
                                         item.filename.length > 1 &&
                                         typeof item.data === "string" &&
                                         item.data.length <= MessageConfig.maxfileByteLength
-                                    ){
+                                    ) {
                                         try {
                                             item.data = Buffer.from(item.data, "base64");
                                             parsedAttachments.push(item);
-                                        } catch(e) {
+                                        } catch (e) {
                                             item.data = null;
                                             attachments[i] = null;
                                             failedAttachments.push(item.filename);
@@ -539,20 +561,20 @@ function main() {
                                         break;
                                     }
                                 }
-                                if(failedChecks){
+                                if (failedChecks) {
                                     send(EVENTS.SHOW_ALERT, {
                                         message: "invalid attachment(s)"
                                     });
                                     done = true;
                                 }
-                                if(failedAttachments.length > 0) {
+                                if (failedAttachments.length > 0) {
                                     send(EVENTS.SHOW_ALERT, {
                                         message: "The following attachments could not be sent:" + failedAttachments.join(", ")
                                     });
                                 }
                             }
 
-                            if(!done){
+                            if (!done) {
                                 room.addMessage(username, content, parsedAttachments);
                             }
                             break;
