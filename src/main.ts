@@ -166,7 +166,7 @@ function main() {
             });
         }
 
-        if (!(await account.validatePassword(username, password))) {
+        if (!(await ACCOUNTS.validatePassword(username, password))) {
             return express_reply(res, {
                 error: true,
                 message: "Incorrect password!"
