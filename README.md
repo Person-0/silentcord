@@ -50,6 +50,7 @@ USERNAME  |  PASSWORD |
 - Ratelimits to prevent DDOS / DOS
 - Attachments
 - Voice Chat
+- React frontend instead of Vanilla HTML/CSS
 
 ## Guide
 - Feature requests can be made by opening a new issue.

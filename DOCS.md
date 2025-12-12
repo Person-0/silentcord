@@ -141,7 +141,7 @@ Following methods exist for interacting with the backend API:
     ```
 
 
-## Chat Room
+## Chat Room (Docs WIP)
 
 The chat room is connected through a WebSocket.<br>
  - The WebSocket base path:
