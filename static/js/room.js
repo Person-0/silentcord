@@ -203,18 +203,20 @@ async function main() {
 
     const joinVoiceBtn = document.getElementById("join-voice-btn");
     const leaveVoiceBtn = document.getElementById("leave-voice-btn");
+    const muteBtn = document.getElementById("mute-btn");
+    const muteIcon = document.getElementById("mute-icon");
+    const activeControls = document.getElementById("active-controls");
+    
     const voiceStatus = document.getElementById("voice-status");
     const voicePeersList = document.getElementById("voice-peers-list");
     
-    // Variables for voice state
     let localStream = null;
+    let isMuted = false;
     const voicePeers = {}; 
     const voicePeerElements = {};
 
-    // LAN Configuration
     const rtcConfig = { iceServers: [] };
 
-    // --- Helper Functions ---
 
     function removePeer(username) {
         if (voicePeers[username]) {
@@ -240,14 +242,16 @@ async function main() {
                 audioEl.autoplay = true;
                 audioEl.srcObject = event.streams[0];
                 
-                const wrapper = document.createElement("div");
-                wrapper.className = "voice-peer-card";
-                wrapper.style.cssText = "background: #222; padding: 10px; border-radius: 5px; color: white; display: flex; align-items: center; gap: 10px;";
-                wrapper.innerHTML = `<span>🔊 ${targetUsername}</span>`;
-                wrapper.appendChild(audioEl);
+                const card = document.createElement("div");
+                card.className = "peer-card";
+                card.innerHTML = `
+                    <img src="./assets/img/hand_drawn_account.png" class="peer-avatar" alt="User">
+                    <div class="peer-name">${targetUsername}</div>
+                `;
+                card.appendChild(audioEl);
 
-                voicePeersList.appendChild(wrapper);
-                voicePeerElements[targetUsername] = wrapper;
+                voicePeersList.appendChild(card);
+                voicePeerElements[targetUsername] = card;
             }
         };
 
@@ -264,8 +268,7 @@ async function main() {
         return pc;
     }
 
-    // Expose these to the global scope or ws.onmessage handler 
-    // (We attach them to the window object so the message handler above can find them)
+    // Expose helpers globally for WS handler
     window.connectToNewPeer = async (targetUsername) => {
         const pc = createPeerConnection(targetUsername);
         const offer = await pc.createOffer();
@@ -304,7 +307,7 @@ async function main() {
         }
     };
     
-    window.removePeer = removePeer; // Expose to ws.onmessage
+    window.removePeer = removePeer;
 
     // --- Button Handlers ---
 
@@ -315,15 +318,47 @@ async function main() {
             console.log("Microphone access granted.");
             
             joinVoiceBtn.style.display = "none";
-            leaveVoiceBtn.style.display = "inline-flex";
-            voiceStatus.innerText = "Status: Connected (Listening...)";
-            voiceStatus.style.color = "#4bb543";
+            activeControls.style.display = "flex";
+            
+            voiceStatus.innerText = "Status: Connected";
+            voiceStatus.className = "status-connected";
+            
+            if (!voicePeerElements["Me"]) {
+                const myCard = document.createElement("div");
+                myCard.className = "peer-card";
+                myCard.style.border = "1px solid #2da44e";
+                myCard.innerHTML = `
+                    <img src="./assets/img/hand_drawn_account.png" class="peer-avatar" alt="Me">
+                    <div class="peer-name">${account.username} (You)</div>
+                `;
+                voicePeersList.appendChild(myCard);
+                voicePeerElements["Me"] = myCard;
+            }
 
             send(EVENTS.VOICE_JOIN, { username: account.username });
 
         } catch (err) {
             console.error("Voice Error:", err);
             alert("Could not access microphone. See console for details.");
+        }
+    };
+
+    muteBtn.onclick = () => {
+        if (localStream) {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                // Toggle enabled state
+                audioTrack.enabled = !audioTrack.enabled;
+                isMuted = !audioTrack.enabled;
+                
+                if (isMuted) {
+                    muteBtn.classList.add("btn-muted");
+                    muteIcon.innerText = "mic_off";
+                } else {
+                    muteBtn.classList.remove("btn-muted");
+                    muteIcon.innerText = "mic";
+                }
+            }
         }
     };
 
@@ -334,15 +369,24 @@ async function main() {
             localStream = null;
         }
         
-        // Clear all peers
         Object.keys(voicePeers).forEach(username => removePeer(username));
+        
+        if (voicePeerElements["Me"]) {
+            voicePeerElements["Me"].remove();
+            delete voicePeerElements["Me"];
+        }
 
         send(EVENTS.VOICE_LEAVE, { username: account.username });
 
-        joinVoiceBtn.style.display = "inline-flex";
-        leaveVoiceBtn.style.display = "none";
+        joinVoiceBtn.style.display = "flex";
+        activeControls.style.display = "none";
+        
+        isMuted = false;
+        muteBtn.classList.remove("btn-muted");
+        muteIcon.innerText = "mic";
+
         voiceStatus.innerText = "Status: Disconnected";
-        voiceStatus.style.color = "#aaa";
+        voiceStatus.className = "status-disconnected";
     };
 }
 

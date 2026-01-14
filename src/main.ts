@@ -648,7 +648,7 @@ wss.on("connection", (ws: WebSocketConnectedClient, req) => {
 })
 
 // Start the server
-server.listen(CONFIG.server_port, () => {
+server.listen(CONFIG.server_port, '0.0.0.0', () => {
     console.log("\t Server listening on PORT:", CONFIG.server_port);
     console.log(`\t Access at http://127.0.0.1:${CONFIG.server_port}\n`);
 })
