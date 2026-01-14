@@ -12,7 +12,7 @@
 
 Following methods exist for interacting with the backend API:
 
-### Login 
+### > Login 
 - ```
     POST /api/login
   ```
@@ -29,12 +29,12 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
+        "error": "boolean",
         "message": "description of error"
     }
     ```
 
-### Signup 
+### > Signup 
 - ```
     POST /api/signup
   ```
@@ -51,12 +51,12 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
+        "error": "boolean",
         "message": "description of error"
     }
     ```
 
-### Logout
+### > Logout
 - ```
     GET /api/logout
   ```
@@ -66,12 +66,12 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
+        "error": "boolean",
         "message": "description of error"
     }
     ```
 
-### Account Details
+### > Account Details
 - ```
     GET /api/account
   ```
@@ -87,16 +87,16 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
+        "error": "boolean",
         "message": "description of error",
         "username": "......",
         "ip": "......",
         "name": "......",
-        "isAdmin": boolean
+        "isAdmin": "boolean"
     }
     ```
 
-### Create Room
+### > Create Room
 - ```
     GET /api/create_room
   ```
@@ -112,13 +112,13 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
+        "error": "boolean",
         "message": "description of error",
         "id": "Room ID"
     }
     ```
 
-### Destroy Room
+### > Destroy Room
 - ```
     GET /api/destroy_room
   ```
@@ -135,7 +135,7 @@ Following methods exist for interacting with the backend API:
     JSON response:
     ```json
     {
-        "error": boolean,
+        "error": "boolean",
         "message": "description of error"
     }
     ```
@@ -148,7 +148,7 @@ The chat room is connected through a WebSocket.<br>
     ```
     /api/ws
     ```
-Messages sent/recieved are all stringified JSON array objects that follow the format:
+Messages sent/recieved are all stringified JSON **array** objects that follow the format:
 ```js
 [
     label: "string", // packet label
