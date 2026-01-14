@@ -230,6 +230,10 @@ async function main() {
     }
 
     function createPeerConnection(targetUsername) {
+        if (voicePeers[targetUsername]) {
+            return voicePeers[targetUsername];
+        }
+
         const pc = new RTCPeerConnection(rtcConfig);
 
         if (localStream) {
@@ -314,7 +318,15 @@ async function main() {
     joinVoiceBtn.onclick = async () => {
         try {
             console.log("Requesting microphone...");
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            localStream = await navigator.mediaDevices.getUserMedia(
+                { 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }, 
+                    video: false 
+            });
             console.log("Microphone access granted.");
             
             joinVoiceBtn.style.display = "none";
