@@ -9,6 +9,7 @@ const connectedPeopleList = document.getElementById("connected-people-list");
 const roomID = (new URLSearchParams(location.search)).get("rid");
 const socketURL = (new URL("api/ws", location.origin)).toString();
 
+
 let account;
 let returnToLogin = false;
 let includeRIDwhenReturning = false;
@@ -128,6 +129,21 @@ async function main() {
             case EVENTS.WS_CLOSE:
                 console.log("WS CLOSED:", data.message);
                 break;
+            case EVENTS.VOICE_JOIN:
+                if (localStream && data.username !== account.username) {
+                    console.log("User joined voice:", data.username);
+                    connectToNewPeer(data.username);
+                }
+                break;
+
+            case EVENTS.VOICE_LEAVE:
+                console.log("User left voice:", data.username);
+                removePeer(data.username);
+                break;
+
+            case EVENTS.VOICE_SIGNAL:
+                handleVoiceSignal(data);
+                break;
         }
     }
 
@@ -181,6 +197,208 @@ async function main() {
 
     chatAttachBtn.onclick = function () {
         alert("Attach file feature unimplemented. Coming soon.");
+    };
+    
+    //voice chat
+
+    const joinVoiceBtn = document.getElementById("join-voice-btn");
+    const leaveVoiceBtn = document.getElementById("leave-voice-btn");
+    const muteBtn = document.getElementById("mute-btn");
+    const muteIcon = document.getElementById("mute-icon");
+    const activeControls = document.getElementById("active-controls");
+    
+    const voiceStatus = document.getElementById("voice-status");
+    const voicePeersList = document.getElementById("voice-peers-list");
+    
+    let localStream = null;
+    let isMuted = false;
+    const voicePeers = {}; 
+    const voicePeerElements = {};
+
+    const rtcConfig = { iceServers: [] };
+
+
+    function removePeer(username) {
+        if (voicePeers[username]) {
+            voicePeers[username].close();
+            delete voicePeers[username];
+        }
+        if (voicePeerElements[username]) {
+            voicePeerElements[username].remove();
+            delete voicePeerElements[username];
+        }
+    }
+
+    function createPeerConnection(targetUsername) {
+        if (voicePeers[targetUsername]) {
+            return voicePeers[targetUsername];
+        }
+
+        const pc = new RTCPeerConnection(rtcConfig);
+
+        if (localStream) {
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        }
+
+        pc.ontrack = (event) => {
+            if (!voicePeerElements[targetUsername]) {
+                const audioEl = document.createElement("audio");
+                audioEl.autoplay = true;
+                audioEl.srcObject = event.streams[0];
+                
+                const card = document.createElement("div");
+                card.className = "peer-card";
+                card.innerHTML = `
+                    <img src="./assets/img/hand_drawn_account.png" class="peer-avatar" alt="User">
+                    <div class="peer-name">${targetUsername}</div>
+                `;
+                card.appendChild(audioEl);
+
+                voicePeersList.appendChild(card);
+                voicePeerElements[targetUsername] = card;
+            }
+        };
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                send(EVENTS.VOICE_SIGNAL, {
+                    target: targetUsername,
+                    signal: { type: "candidate", candidate: event.candidate }
+                });
+            }
+        };
+
+        voicePeers[targetUsername] = pc;
+        return pc;
+    }
+
+    // Expose helpers globally for WS handler
+    window.connectToNewPeer = async (targetUsername) => {
+        const pc = createPeerConnection(targetUsername);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        send(EVENTS.VOICE_SIGNAL, {
+            target: targetUsername,
+            signal: { type: "offer", sdp: offer }
+        });
+    };
+
+    window.handleVoiceSignal = async (data) => {
+        const { sender, signal } = data;
+        if (!localStream) return;
+
+        let pc = voicePeers[sender];
+        if (!pc) pc = createPeerConnection(sender);
+
+        if (signal.type === "offer") {
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            
+            send(EVENTS.VOICE_SIGNAL, {
+                target: sender,
+                signal: { type: "answer", sdp: answer }
+            });
+
+        } else if (signal.type === "answer") {
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+
+        } else if (signal.type === "candidate") {
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+            } catch (e) { console.error("Error adding candidate", e); }
+        }
+    };
+    
+    window.removePeer = removePeer;
+
+    // --- Button Handlers ---
+
+    joinVoiceBtn.onclick = async () => {
+        try {
+            console.log("Requesting microphone...");
+            localStream = await navigator.mediaDevices.getUserMedia(
+                { 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }, 
+                    video: false 
+            });
+            console.log("Microphone access granted.");
+            
+            joinVoiceBtn.style.display = "none";
+            activeControls.style.display = "flex";
+            
+            voiceStatus.innerText = "Status: Connected";
+            voiceStatus.className = "status-connected";
+            
+            if (!voicePeerElements["Me"]) {
+                const myCard = document.createElement("div");
+                myCard.className = "peer-card";
+                myCard.style.border = "1px solid #2da44e";
+                myCard.innerHTML = `
+                    <img src="./assets/img/hand_drawn_account.png" class="peer-avatar" alt="Me">
+                    <div class="peer-name">${account.username} (You)</div>
+                `;
+                voicePeersList.appendChild(myCard);
+                voicePeerElements["Me"] = myCard;
+            }
+
+            send(EVENTS.VOICE_JOIN, { username: account.username });
+
+        } catch (err) {
+            console.error("Voice Error:", err);
+            alert("Could not access microphone. See console for details.");
+        }
+    };
+
+    muteBtn.onclick = () => {
+        if (localStream) {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                // Toggle enabled state
+                audioTrack.enabled = !audioTrack.enabled;
+                isMuted = !audioTrack.enabled;
+                
+                if (isMuted) {
+                    muteBtn.classList.add("btn-muted");
+                    muteIcon.innerText = "mic_off";
+                } else {
+                    muteBtn.classList.remove("btn-muted");
+                    muteIcon.innerText = "mic";
+                }
+            }
+        }
+    };
+
+    leaveVoiceBtn.onclick = () => {
+        console.log("Leaving voice...");
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        
+        Object.keys(voicePeers).forEach(username => removePeer(username));
+        
+        if (voicePeerElements["Me"]) {
+            voicePeerElements["Me"].remove();
+            delete voicePeerElements["Me"];
+        }
+
+        send(EVENTS.VOICE_LEAVE, { username: account.username });
+
+        joinVoiceBtn.style.display = "flex";
+        activeControls.style.display = "none";
+        
+        isMuted = false;
+        muteBtn.classList.remove("btn-muted");
+        muteIcon.innerText = "mic";
+
+        voiceStatus.innerText = "Status: Disconnected";
+        voiceStatus.className = "status-disconnected";
     };
 }
 
@@ -270,3 +488,4 @@ function fetchConfig(filename) {
         (new URL("js/configs/" + filename, location.origin)
     ).toString()).then(res => res.json()));
 }
+

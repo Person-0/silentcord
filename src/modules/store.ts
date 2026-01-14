@@ -23,7 +23,7 @@ export class FileStoreManager {
         if(isDemoMode) return;
 
         if (fs.existsSync(storagePath)) {
-            fs.rmdirSync(storagePath, { recursive: true });
+            fs.rmSync(storagePath, { recursive: true });
         }
         fs.mkdirSync(storagePath, { recursive: true });
     }
@@ -54,7 +54,7 @@ export class FileStoreManager {
     clear() {
         if(isDemoMode) return;
         try {
-            fs.rmdirSync(this.path, { recursive: true });
+            fs.rmSync(this.path, { recursive: true });
         } catch (error) {
             console.log("STORE >> CLEAR() ERROR:", error);
         }
