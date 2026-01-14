@@ -47,9 +47,9 @@ USERNAME  |  PASSWORD |
 ### [View Server Docs](./DOCS.md)
 
 ## TODO
-- Ratelimits to prevent DDOS / DOS
-- Attachments
-- Voice Chat
+- Ratelimits to prevent DDOS - [#2](https://github.com/Person-0/silentcord/issues/2)
+- Attachments - [#3](https://github.com/Person-0/silentcord/issues/3)
+- Voice Chat - [#1](https://github.com/Person-0/silentcord/issues/1)
 - React frontend instead of Vanilla HTML/CSS
 
 ## Guide
