@@ -52,8 +52,22 @@
         </div>
     </div>
 
-    <div id="main-container-voicechat" tab-id="" style="display: flex;" class="tabs">
+    <div id="main-container-voicechat" tab-id="v" style="display: none;" class="tabs">
+        <div class="voice-controls" style="padding: 20px;">
+            <h2 style="color: white; margin-bottom: 20px;">Voice Channel</h2>
+            <div id="voice-status" style="color: #aaa; margin-bottom: 20px;">Status: Disconnected</div>
+            
+            <button id="join-voice-btn" class="input-button" style="background-color: #2da44e;">
+                <span class="material-symbols-outlined material-icon-icon">call</span> Join Voice
+            </button>
+            
+            <button id="leave-voice-btn" class="input-button" style="background-color: #cf222e; display: none;">
+                <span class="material-symbols-outlined material-icon-icon">call_end</span> Leave Voice
+            </button>
+        </div>
         
+        <div id="voice-peers-list" style="margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; padding: 20px;">
+            </div>
     </div>
 
     <div id="connected-people-list-container">

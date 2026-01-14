@@ -17,8 +17,7 @@ import ratelimiter from "./modules/ratelimiter";
 import { AccessTokensManager, AccountManager, AccountInstance } from "./modules/accounts";
 import { RoomsManager } from "./modules/room";
 import { WebSocketConnectedClient, Room } from "./modules/room";
-import { Attachment } from "./modules/messages";
-
+import { Attachment, UpdateInstance } from "./modules/messages";
 // Validating Schemas
 import * as apiSchema from "./schemas/api";
 
@@ -575,6 +574,26 @@ wss.on("connection", (ws: WebSocketConnectedClient, req) => {
 
                         if (!done) {
                             room.addMessage(username, content, parsedAttachments);
+                        }
+                        break;
+
+                        case EVENTS.VOICE_JOIN:
+                        // Tell everyone else I joined voice
+                        room.broadcastUpdate(new UpdateInstance(EVENTS.VOICE_JOIN, { username }), username);
+                        break;
+
+                    case EVENTS.VOICE_LEAVE:
+                        // Tell everyone else I left voice
+                        room.broadcastUpdate(new UpdateInstance(EVENTS.VOICE_LEAVE, { username }), username);
+                        break;
+
+                    case EVENTS.VOICE_SIGNAL:
+                        // Route a signal (like "Hello, I want to call") to a specific person
+                        if (data.target && typeof data.target === "string" && data.signal) {
+                            room.sendDirect(data.target, EVENTS.VOICE_SIGNAL, {
+                                sender: username,
+                                signal: data.signal
+                            });
                         }
                         break;
 

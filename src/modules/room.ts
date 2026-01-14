@@ -81,6 +81,12 @@ export class Room {
         }
     }
 
+    sendDirect(targetUsername: string, label: string, data: {}) {
+        if (targetUsername in this.connectedClients) {
+            this.connectedClients[targetUsername].ws.sendJSON(label, data);
+        }
+    }
+
     broadcastUpdate(update: UpdateInstance, skipUsername: string[] | string = [], callbackPerClient: (client: ConnectedClient) => void = (client: ConnectedClient) => { }) {
         for (const [username, client] of Object.entries(this.connectedClients)) {
             if (typeof skipUsername === "string") {

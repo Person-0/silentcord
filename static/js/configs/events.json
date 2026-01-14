@@ -11,5 +11,8 @@
     "SHOW_ALERT": "sa",
     "WS_CLOSE": "wsclse",
     "__DEV_REJOIN__": ".dr.",
-    "__DEV_CLEARCHAT": ".dc."
+    "__DEV_CLEARCHAT": ".dc.",
+    "VOICE_JOIN": "vj",
+    "VOICE_LEAVE": "vl",
+    "VOICE_SIGNAL": "vs"
 }
