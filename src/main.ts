@@ -38,6 +38,8 @@ if (SECRETS.IS_DEMO_WEB === "1") {
 const ACCOUNTS = new AccountManager();
 const ACCOUNT_TOKENS = new AccessTokensManager(CONFIG.storedFiles.accessTokens, CONFIG.access_token_expire_interval);
 const Rooms = new RoomsManager();
+const activeWsByIp = new Map<string, WebSocketConnectedClient>();
+
 
 // simple cookie reader
 function readCookies(cookiesStr: string): Record<string, string> {
@@ -355,12 +357,20 @@ app.get("/api/destroy_room", (req, res) => {
 
 // WebSocket connection handler
 wss.on("connection", (ws: WebSocketConnectedClient, req) => {
+    const ip = req.socket.remoteAddress || "unknown";
+    if (activeWsByIp.has(ip)) {
+        ws.close(1008, "Only one WebSocket connection allowed per IP");
+        return;
+    }
+    activeWsByIp.set(ip, ws);
+
     let msgCount = 0;
     const msgInterval = setInterval(() => {
         msgCount = 0;
     }, 1000);
 
     // small one liner to send JSON data to the connected client
+    
     const send = (label: string, data: {} = {}) => { try { ws.send(JSON.stringify([label, data])) } catch (e) { console.log("WebSocket send err:", e) } };
     const close_ws = (reason: string) => {
         try {
@@ -406,6 +416,7 @@ wss.on("connection", (ws: WebSocketConnectedClient, req) => {
     }, 5e3);
 
     ws.on("close", () => {
+        activeWsByIp.delete(ip);
         clearInterval(msgInterval);
         try {
             clearInterval(pingInterval);
