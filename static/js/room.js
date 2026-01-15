@@ -211,7 +211,7 @@ async function main() {
             const estimatedSize = file.size * 1.4; 
             if (estimatedSize > MSGCONFIG.maxfileByteLength) {
                 const limitMB = (MSGCONFIG.maxfileByteLength / (1024 * 1024 * 1.4)).toFixed(2);
-                await alert(`File is too large. Limit is approx ${limitMB} MB.`);
+                await alert(`File is too large. Limit is ${limitMB} MB.`);
                 return;
             }
 
