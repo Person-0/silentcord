@@ -109,6 +109,8 @@ export class Room {
     }
 
     destroy() {
+        this.attachments.clean();
+
         const closeEvent = new UpdateInstance(EVENTS.ROOM_DESTROY, {});
         this.broadcastUpdate(closeEvent, [], (client: ConnectedClient) => {
             try {
@@ -176,7 +178,6 @@ export class RoomsManager {
     destroyRoom = (roomID: string) => {
         const room = this.getRoom(roomID);
         if (room) {
-            room.attachments.clean();
             room.destroy();
             delete this.rooms[roomID]
             return true;
