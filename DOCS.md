@@ -5,6 +5,18 @@
 
 ## API Methods
 
+### Rate Limiting
+
+To protect the server from abuse and request flooding, basic rate limits are enforced.
+
+#### HTTP API Rate Limits
+- Rate limiting is applied per IP address.
+- Each IP is allowed a limited number of API requests within a fixed time window.
+- If the limit is exceeded, the server responds with HTTP status `429 (Too Many Requests)`.
+
+This applies to all `/api/*` endpoints, including authentication and room management APIs.
+
+
 ### Base API path: 
 ```
 /api
@@ -142,6 +154,17 @@ Following methods exist for interacting with the backend API:
 
 
 ## Chat Room (Docs WIP)
+
+### WebSocket Rate Limits & Connection Rules
+
+To prevent abuse and server overload, the following rules are enforced for WebSocket connections:
+
+- **One active WebSocket connection per IP address** is allowed at a time.
+- Each WebSocket connection is limited to a fixed number of messages per second.
+- If a client exceeds the allowed message rate, the server will automatically close the connection.
+
+These limits ensure fair usage and protect the server from flooding or denial-of-service attacks.
+
 
 The chat room is connected through a WebSocket.<br>
  - The WebSocket base path:
