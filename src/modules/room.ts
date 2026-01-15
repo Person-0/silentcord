@@ -22,6 +22,7 @@ class ConnectedClient {
 
 export class AttachmentsManager {
     filestore: FileStoreManager;
+    rid: string;
 
     clean() {
         this.filestore.clear();
@@ -35,7 +36,8 @@ export class AttachmentsManager {
             filename_new = filename + "_" + tryIndex.toString();
         }
         this.filestore.save(filename_new, filedata);
-        return "/attachments/id/" + filename_new;
+        // FIX: Use this.rid instead of hardcoded "id"
+        return "/attachments/" + this.rid + "/" + filename_new;
     }
 
     delete(filename: string) {
@@ -43,6 +45,7 @@ export class AttachmentsManager {
     }
 
     constructor(rid: string) {
+        this.rid = rid;
         this.filestore = new FileStoreManager(rid);
     }
 }
@@ -106,6 +109,8 @@ export class Room {
     }
 
     destroy() {
+        this.attachments.clean();
+
         const closeEvent = new UpdateInstance(EVENTS.ROOM_DESTROY, {});
         this.broadcastUpdate(closeEvent, [], (client: ConnectedClient) => {
             try {
@@ -173,7 +178,6 @@ export class RoomsManager {
     destroyRoom = (roomID: string) => {
         const room = this.getRoom(roomID);
         if (room) {
-            room.attachments.clean();
             room.destroy();
             delete this.rooms[roomID]
             return true;

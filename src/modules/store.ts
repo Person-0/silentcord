@@ -54,7 +54,7 @@ export class FileStoreManager {
     clear() {
         if(isDemoMode) return;
         try {
-            fs.rmSync(this.path, { recursive: true });
+            fs.rmSync(this.path, { recursive: true, force: true });
         } catch (error) {
             console.log("STORE >> CLEAR() ERROR:", error);
         }

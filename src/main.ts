@@ -502,15 +502,14 @@ wss.on("connection", (ws: WebSocketConnectedClient, req) => {
                         const parsedAttachments: Attachment[] = [];
                         let done = false;
 
+                        const hasAttachments = attachments && Array.isArray(attachments) && attachments.length > 0;
+                        
                         if (
-                            !(
-                                content &&
-                                content.length > 0 &&
-                                content.length <= MessageConfig.textLimit
-                            )
+                            !((content && content.length > 0) || hasAttachments) || 
+                            (content && content.length > MessageConfig.textLimit)
                         ) {
                             send(EVENTS.SHOW_ALERT, {
-                                message: "invalid message sent"
+                                message: "invalid message sent (must have content or attachment)"
                             });
                             done = true;
                         }
@@ -573,7 +572,7 @@ wss.on("connection", (ws: WebSocketConnectedClient, req) => {
                         }
 
                         if (!done) {
-                            room.addMessage(username, content, parsedAttachments);
+                            room.addMessage(username, content || "", parsedAttachments);
                         }
                         break;
 
