@@ -1,3 +1,4 @@
+/* static/js/room.js */
 const messageBreakTimer = 5 * 60e3; // continous messages from same author is broken after this gap (in ms)
 
 const chatContainer = document.getElementById("chat-container");
@@ -103,7 +104,8 @@ async function main() {
 
             case EVENTS.MESSAGE_NEW:
                 console.log(data);
-                addNewMessage(data.author, data.timestamp, "./assets/img/hand_drawn_account.png", data.content);
+                // Pass attachments to the renderer
+                addNewMessage(data.author, data.timestamp, "./assets/img/hand_drawn_account.png", data.content, data.attachments);
                 break;
 
             case EVENTS.USER_JOIN:
@@ -196,11 +198,53 @@ async function main() {
     })
 
     chatAttachBtn.onclick = function () {
-        alert("Attach file feature unimplemented. Coming soon.");
+        const input = document.createElement("input");
+        input.type = "file";
+        input.style.display = "none";
+        
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Check file size (approximate for base64 overhead)
+            // Base64 is roughly 1.37x larger than binary
+            const estimatedSize = file.size * 1.4; 
+            if (estimatedSize > MSGCONFIG.maxfileByteLength) {
+                const limitMB = (MSGCONFIG.maxfileByteLength / (1024 * 1024 * 1.4)).toFixed(2);
+                await alert(`File is too large. Limit is approx ${limitMB} MB.`);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result;
+                const base64Data = result.split(",")[1];
+                
+                if (base64Data.length > MSGCONFIG.maxfileByteLength) {
+                    alert("File data too large after encoding.");
+                    return;
+                }
+
+                send(EVENTS.MESSAGE_NEW, {
+                    content: chatInput.value || "",
+                    attachments: [{
+                        filename: file.name,
+                        data: base64Data
+                    }]
+                });
+                
+                chatInput.value = "";
+                chatInput.blur();
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.body.appendChild(input);
+        input.click();
+        document.body.removeChild(input);
     };
     
     //voice chat
-
     const joinVoiceBtn = document.getElementById("join-voice-btn");
     const leaveVoiceBtn = document.getElementById("leave-voice-btn");
     const muteBtn = document.getElementById("mute-btn");
@@ -431,12 +475,39 @@ function clearChatList() {
     chatContainer.innerHTML = "";
 }
 
-function addNewMessage(author, epochTime, profileimg, messageContent) {
+function getAttachmentHtml(filename, url) {
+    const ext = filename.split(".").pop().toLowerCase();
+    
+    if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) {
+        return `<br><a href="${url}" target="_blank"><img src="${url}" class="attachment-img"></a>`;
+    } else if (["mp4", "webm", "ogg"].includes(ext)) {
+         return `<br><video src="${url}" controls class="attachment-vid"></video>`;
+    } else {
+        return `
+            <a href="${url}" target="_blank" class="attachment-card">
+                <div class="attachment-icon">📄</div>
+                <div class="attachment-info">
+                    <span class="attachment-name">${filename}</span>
+                    <span class="attachment-size">Click to download</span>
+                </div>
+            </a>
+        `;
+    }
+}
+
+function addNewMessage(author, epochTime, profileimg, messageContent, attachments = {}) {
     const newDate = new Date(epochTime);
     const timeString = [newDate.getHours(), newDate.getMinutes()].map(e => {
         const t = e.toString();
         return t.length === 1 ? ("0" + t) : t;
     }).join(":");
+
+    let attachmentHtml = "";
+    if (attachments && Object.keys(attachments).length > 0) {
+        for (const [filename, url] of Object.entries(attachments)) {
+            attachmentHtml += getAttachmentHtml(filename, url);
+        }
+    }
 
     if (
         lastUserMessage.author &&
@@ -444,8 +515,14 @@ function addNewMessage(author, epochTime, profileimg, messageContent) {
         (epochTime - lastUserMessage.epochTime) <= messageBreakTimer
     ) {
         const lastMessageContentContainer = Array.from(document.querySelectorAll(".chat-user-msg")).pop();
-        lastMessageContentContainer.innerHTML += "<br>";
-        lastMessageContentContainer.innerText += messageContent;
+        if(messageContent) {
+            lastMessageContentContainer.innerHTML += "<br>";
+            const textNode = document.createTextNode(messageContent);
+            lastMessageContentContainer.appendChild(textNode);
+        }
+        if(attachmentHtml) {
+            lastMessageContentContainer.innerHTML += attachmentHtml;
+        }
     } else {
         chatContainer.insertAdjacentHTML("beforeend", `
             <div class="chat-item">
@@ -456,7 +533,11 @@ function addNewMessage(author, epochTime, profileimg, messageContent) {
                 </div>
             </div>
         `)
-        Array.from(document.querySelectorAll(".chat-user-msg")).pop().innerText = messageContent;
+        const msgDiv = Array.from(document.querySelectorAll(".chat-user-msg")).pop();
+        msgDiv.innerText = messageContent;
+        if(attachmentHtml) {
+            msgDiv.innerHTML += attachmentHtml;
+        }
         lastUserMessage = { author, epochTime };
     }
 }
@@ -488,4 +569,3 @@ function fetchConfig(filename) {
         (new URL("js/configs/" + filename, location.origin)
     ).toString()).then(res => res.json()));
 }
-

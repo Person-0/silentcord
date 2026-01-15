@@ -362,3 +362,62 @@
     background-color: #cf222e !important;
     color: white !important;
 }
+
+.attachment-card {
+    display: flex;
+    align-items: center;
+    background-color: #2f3136;
+    border: 1px solid #202225;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 8px;
+    max-width: 350px;
+    text-decoration: none;
+    color: #dcddde;
+    transition: background-color 0.2s;
+}
+
+.attachment-card:hover {
+    background-color: #36393f;
+}
+
+.attachment-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.attachment-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.attachment-name {
+    font-weight: 600;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+}
+
+.attachment-size {
+    font-size: 0.75em;
+    color: #b9bbbe;
+    margin-top: 2px;
+}
+
+.attachment-img {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 5px;
+    margin-top: 5px;
+    display: block;
+}
+
+.attachment-vid {
+    max-width: 100%;
+    max-height: 300px;
+    margin-top: 5px;
+    display: block;
+}
