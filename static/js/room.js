@@ -304,6 +304,8 @@ async function main() {
                 `;
                 card.appendChild(videoEl);
 
+                const videoTrack = event.streams[0].getVideoTracks()[0];
+
                 if (videoTrack) {
                     if (!videoTrack.enabled) {
                         card.classList.add("video-disabled");
