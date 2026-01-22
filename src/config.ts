@@ -13,5 +13,11 @@ export default {
         "accessTokens": "accesstokens.json",
         "accounts": "accounts.json",
         "credentials": "account_credentials.json"
+    },
+    // New Rate Limiting Configuration
+    "rateLimit": {
+        "windowMs": 15 * 60 * 1000, // 15 minutes
+        "maxRequests": 100, // Limit each IP to 100 requests per window
+        "wsMaxConnections": 50 // Maximum total concurrent WebSocket connections
     }
 }

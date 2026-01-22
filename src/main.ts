@@ -4,6 +4,7 @@ import * as path from "path";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import express from "express";
+import rateLimit from "express-rate-limit"; // <--- NEW IMPORT
 import * as bodyParser from "body-parser";
 import { config } from "dotenv";
 
@@ -13,7 +14,7 @@ import "./misc/loggerpatch";
 import * as EVENTS from "../static/js/configs/events.json";
 import * as MessageConfig from "../static/js/configs/messageConfig.json";
 import CONFIG from "./config";
-import ratelimiter from "./modules/ratelimiter";
+// import ratelimiter from "./modules/ratelimiter"; // <--- REMOVED OLD LIMITER
 import { AccessTokensManager, AccountManager, AccountInstance } from "./modules/accounts";
 import { RoomsManager } from "./modules/room";
 import { WebSocketConnectedClient, Room } from "./modules/room";
@@ -69,8 +70,17 @@ const wss = new WebSocketServer({ server, path: "/api/ws" });
 // short one-liner func to "reply" to express requests with stringified json
 const express_reply = (res: any, data: {}) => res.send(JSON.stringify(data));
 
-// WIP (unimplemented): ratelimiting to prevent DOS / DDOS
-app.use(ratelimiter);
+// NEW: Rate Limiter Middleware
+const limiter = rateLimit({
+	windowMs: CONFIG.rateLimit.windowMs,
+	max: CONFIG.rateLimit.maxRequests,
+	standardHeaders: true, 
+	legacyHeaders: false, 
+    message: JSON.stringify({ error: true, message: "Too many requests, please try again later." })
+});
+
+// Apply the rate limiting middleware to all requests
+app.use(limiter);
 
 // POST request handling
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -357,6 +367,12 @@ app.get("/api/destroy_room", (req, res) => {
 
 // WebSocket connection handler
 wss.on("connection", (ws: WebSocketConnectedClient, req) => {
+    // NEW: Check global connection cap
+    if (wss.clients.size > CONFIG.rateLimit.wsMaxConnections) {
+        ws.close(1008, "Server too busy");
+        return;
+    }
+
     const ip = req.socket.remoteAddress || "unknown";
     if (activeWsByIp.has(ip)) {
         ws.close(1008, "Only one WebSocket connection allowed per IP");
