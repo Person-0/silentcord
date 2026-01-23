@@ -250,12 +250,16 @@ async function main() {
     const muteBtn = document.getElementById("mute-btn");
     const muteIcon = document.getElementById("mute-icon");
     const activeControls = document.getElementById("active-controls");
+
+    const cameraBtn = document.getElementById("camera-btn");
+    const cameraIcon = document.getElementById("camera-icon");
     
     const voiceStatus = document.getElementById("voice-status");
     const voicePeersList = document.getElementById("voice-peers-list");
     
     let localStream = null;
     let isMuted = false;
+    let isCameraOff = false;
     const voicePeers = {}; 
     const voicePeerElements = {};
 
@@ -286,9 +290,11 @@ async function main() {
 
         pc.ontrack = (event) => {
             if (!voicePeerElements[targetUsername]) {
-                const audioEl = document.createElement("audio");
-                audioEl.autoplay = true;
-                audioEl.srcObject = event.streams[0];
+                const videoEl = document.createElement("video");
+                videoEl.autoplay = true;
+                videoEl.srcObject = event.streams[0];
+                videoEl.style.width = "100%";
+                videoEl.style.borderRadius = "8px";
                 
                 const card = document.createElement("div");
                 card.className = "peer-card";
@@ -296,7 +302,22 @@ async function main() {
                     <img src="./assets/img/hand_drawn_account.png" class="peer-avatar" alt="User">
                     <div class="peer-name">${targetUsername}</div>
                 `;
-                card.appendChild(audioEl);
+                card.appendChild(videoEl);
+
+                const videoTrack = event.streams[0].getVideoTracks()[0];
+
+                if (videoTrack) {
+                    if (!videoTrack.enabled) {
+                        card.classList.add("video-disabled");
+                    }
+                    
+                    videoTrack.onmute = () => {
+                        card.classList.add("video-disabled");
+                    };
+                    videoTrack.onunmute = () => {
+                        card.classList.remove("video-disabled");
+                    };
+                }
 
                 voicePeersList.appendChild(card);
                 voicePeerElements[targetUsername] = card;
@@ -369,9 +390,9 @@ async function main() {
                         noiseSuppression: true,
                         autoGainControl: true
                     }, 
-                    video: false 
+                    video: true
             });
-            console.log("Microphone access granted.");
+            console.log("Media access granted.");
             
             joinVoiceBtn.style.display = "none";
             activeControls.style.display = "flex";
@@ -383,19 +404,38 @@ async function main() {
                 const myCard = document.createElement("div");
                 myCard.className = "peer-card";
                 myCard.style.border = "1px solid #2da44e";
+
+                const videoEl = document.createElement("video");
+                videoEl.srcObject = localStream;
+                videoEl.autoplay = true;
+                videoEl.playsInline = true;
+                videoEl.style.width = "100%";
+                videoEl.style.borderRadius = "8px";
+                videoEl.style.transform = "scaleX(-1)";
+
                 myCard.innerHTML = `
-                    <img src="./assets/img/hand_drawn_account.png" class="peer-avatar" alt="Me">
                     <div class="peer-name">${account.username} (You)</div>
                 `;
+
+                myCard.prepend(videoEl);
+
                 voicePeersList.appendChild(myCard);
                 voicePeerElements["Me"] = myCard;
             }
 
+            isMuted = false;
+            muteBtn.classList.remove("btn-muted");
+            muteIcon.innerText = "mic";
+
+            isCameraOff = false;
+            cameraBtn.classList.remove("btn-muted");
+            cameraIcon.innerText = "videocam";
+
             send(EVENTS.VOICE_JOIN, { username: account.username });
 
         } catch (err) {
-            console.error("Voice Error:", err);
-            alert("Could not access microphone. See console for details.");
+            console.error("Error:", err);
+            alert("Could not access media devices. See console for details.");
         }
     };
 
@@ -413,6 +453,32 @@ async function main() {
                 } else {
                     muteBtn.classList.remove("btn-muted");
                     muteIcon.innerText = "mic";
+                }
+            }
+        }
+    };
+
+    cameraBtn.onclick = () => {
+        if (localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                isCameraOff = !videoTrack.enabled;
+                
+                if (isCameraOff) {
+                    cameraBtn.classList.add("btn-muted");
+                    cameraIcon.innerText = "videocam_off";
+                } else {
+                    cameraBtn.classList.remove("btn-muted");
+                    cameraIcon.innerText = "videocam";
+                }
+
+                if (voicePeerElements["Me"]) {
+                    if (isCameraOff) {
+                        voicePeerElements["Me"].classList.add("video-disabled");
+                    } else {
+                        voicePeerElements["Me"].classList.remove("video-disabled");
+                    }
                 }
             }
         }
@@ -440,6 +506,10 @@ async function main() {
         isMuted = false;
         muteBtn.classList.remove("btn-muted");
         muteIcon.innerText = "mic";
+
+        isCameraOff = false;
+        cameraBtn.classList.remove("btn-muted");
+        cameraIcon.innerText = "videocam";
 
         voiceStatus.innerText = "Status: Disconnected";
         voiceStatus.className = "status-disconnected";
