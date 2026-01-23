@@ -1,4 +1,6 @@
 /* static/js/room.js */
+import { toggleVoiceInput } from "./libs/voice.js";
+
 const messageBreakTimer = 5 * 60e3; // continous messages from same author is broken after this gap (in ms)
 
 const chatContainer = document.getElementById("chat-container");
@@ -147,6 +149,33 @@ async function main() {
                 handleVoiceSignal(data);
                 break;
         }
+
+        // ---------------- VOICE → TEXT CHAT ----------------
+
+const voiceTextBtn = document.getElementById("voice-text-btn");
+let isVoiceTyping = false;
+
+if (voiceTextBtn) {
+    voiceTextBtn.onclick = () => {
+        toggleVoiceInput(
+            (text) => {
+                chatInput.value = text;
+                chatInput.focus();
+            },
+            () => {
+                isVoiceTyping = true;
+                voiceTextBtn.classList.add("listening");
+                voiceTextBtn.innerText = "🎙️";
+            },
+            () => {
+                isVoiceTyping = false;
+                voiceTextBtn.classList.remove("listening");
+                voiceTextBtn.innerText = "🎤";
+            }
+        );
+    };
+}
+
     }
 
     ws.onclose = () => {
