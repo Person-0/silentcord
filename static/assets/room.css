@@ -440,3 +440,10 @@
     margin-top: 5px;
     display: block;
 }
+
+#voice-text-btn {
+    margin-left: 10px;
+    background-color: #10023c;
+    color: white;
+    animation: pulse 1.2s infinite;
+}
